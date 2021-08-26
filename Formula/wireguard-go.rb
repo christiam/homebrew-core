@@ -1,15 +1,22 @@
 class WireguardGo < Formula
   desc "Userspace Go implementation of WireGuard"
   homepage "https://www.wireguard.com/"
-  url "https://git.zx2c4.com/wireguard-go/snapshot/wireguard-go-0.0.20191012.tar.xz"
-  sha256 "f4b651b7da7c93a4318c1231204d7d4529e2610b57041ee99fd85c22301edbcc"
-  head "https://git.zx2c4.com/wireguard-go", :using => :git
+  url "https://git.zx2c4.com/wireguard-go/snapshot/wireguard-go-0.0.20210424.tar.xz"
+  sha256 "0f9a7c0657e6119d317a0bab453aeb5140111b186ae10f62cfa081eecf2f03ba"
+  license "MIT"
+  head "https://git.zx2c4.com/wireguard-go.git", branch: "master"
+
+  livecheck do
+    url :head
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "8a7b16f346fc85f4a6f5c3a251c115f8912fc97975e38bb06d89cbc6a86bf5ae" => :catalina
-    sha256 "a83b5669aa33d227ef2a20f2db58fc09ccdbadde417d7cbd4fab69e696a3b86f" => :mojave
-    sha256 "af7d625e4662a343bbbe16c87693331722e8435808e90dcbbe0a2e6df545d2f1" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "2b5cecc46c8cb3358a10768cd638fefab905dfb66f1ec151af64ce27d152f474"
+    sha256 cellar: :any_skip_relocation, big_sur:       "9f3812acc99aaf982518460b33d67930b824e8e86bfd00e9303dd0fb7e94cd74"
+    sha256 cellar: :any_skip_relocation, catalina:      "7067cc06c22612f886694f5471b1b7b7d196f9047c1939745f8140d5b1695f1f"
+    sha256 cellar: :any_skip_relocation, mojave:        "be446fceccc238dbfe68c3c23cb03feb1e911245934bba66007c263bfeb9114c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "93b2808f28f71bc2dca45268cd82a86db23b9f9264df87e0946eef577b62d984"
   end
 
   depends_on "go" => :build
@@ -21,6 +28,13 @@ class WireguardGo < Formula
   end
 
   test do
-    assert_match "be utun", pipe_output("WG_PROCESS_FOREGROUND=1 #{bin}/wireguard-go notrealutun")
+    prog = "#{bin}/wireguard-go -f notrealutun 2>&1"
+    on_macos do
+      assert_match "be utun", pipe_output(prog)
+    end
+
+    on_linux do
+      assert_match "Running wireguard-go is not required because this", pipe_output(prog)
+    end
   end
 end

@@ -1,39 +1,48 @@
 class Bettercap < Formula
   desc "Swiss army knife for network attacks and monitoring"
   homepage "https://www.bettercap.org/"
-  url "https://github.com/bettercap/bettercap/archive/v2.26.1.tar.gz"
-  sha256 "75530015ee27e5ba05faff0295486ca85489ecd9de3161ca398a9b577522c578"
+  url "https://github.com/bettercap/bettercap/archive/v2.32.0.tar.gz"
+  sha256 "ea28d4d533776a328a54723a74101d1720016ffe7d434bf1d7ab222adb397ac6"
+  license "GPL-3.0-only"
+  head "https://github.com/bettercap/bettercap.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "91a85e1c0118e7d5c31b9a1f8fd9ad3b4fca7a57722910099460e84f14f4b553" => :catalina
-    sha256 "241b85a1ce777e9fe9e8d8408afd46fc613c4cf691c1be3c3dbc35e8bde215b0" => :mojave
-    sha256 "dceaab3973b28c4cc88629a4a192d0da1d6ce2ed602260d5dda83e75132295a9" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "e52d4ecc4d9b34037d66f1399b4111f3753ac6fde6fdebb922170367d82578f2"
+    sha256 cellar: :any,                 big_sur:       "6ca4df5dc6af80e97961923613220f3930989b3b2ef2911609a719003500d613"
+    sha256 cellar: :any,                 catalina:      "d719df24fe3a24f2712fd5e08027b20ec0cf4a1e3e9f659d1b085a0b23bc7ee8"
+    sha256 cellar: :any,                 mojave:        "cb44f7b4fed4e8c10049d4e69f3745f78d07a70b03b77327b9e6d02e03e7c020"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "4eee88cd3e242be845ff45289d6d350a5bbbe9bac3801c2a17665c770ba24492"
   end
 
-  depends_on "dep" => :build
   depends_on "go" => :build
   depends_on "pkg-config" => :build
   depends_on "libusb"
 
-  def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/bettercap/bettercap").install buildpath.children
+  uses_from_macos "libpcap"
 
-    cd "src/github.com/bettercap/bettercap" do
-      system "make", "build"
-      bin.install "bettercap"
-      prefix.install_metafiles
-    end
+  on_linux do
+    depends_on "libnetfilter-queue"
   end
 
-  def caveats; <<~EOS
-    bettercap requires root privileges so you will need to run `sudo bettercap`.
-    You should be certain that you trust any software you grant root privileges.
-  EOS
+  def install
+    system "make", "build"
+    bin.install "bettercap"
+  end
+
+  def caveats
+    <<~EOS
+      bettercap requires root privileges so you will need to run `sudo bettercap`.
+      You should be certain that you trust any software you grant root privileges.
+    EOS
   end
 
   test do
-    assert_match "bettercap", shell_output("#{bin}/bettercap -help 2>&1", 2)
+    on_macos do
+      assert_match "Operation not permitted", shell_output(bin/"bettercap 2>&1", 1)
+    end
+
+    on_linux do
+      assert_match "Permission Denied", shell_output(bin/"bettercap 2>&1", 1)
+    end
   end
 end

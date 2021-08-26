@@ -1,18 +1,26 @@
 class Glfw < Formula
   desc "Multi-platform library for OpenGL applications"
   homepage "https://www.glfw.org/"
-  url "https://github.com/glfw/glfw/archive/3.3.1.tar.gz"
-  sha256 "6bca16e69361798817a4b62a5239a77253c29577fcd5d52ae8b85096e514177f"
+  url "https://github.com/glfw/glfw/archive/3.3.4.tar.gz"
+  sha256 "cc8ac1d024a0de5fd6f68c4133af77e1918261396319c24fd697775a6bc93b63"
+  license "Zlib"
   head "https://github.com/glfw/glfw.git"
 
   bottle do
-    cellar :any
-    sha256 "4996e07913ae48845b920762f8cbeb4c7595d587d9d8b53af267493743e7c10d" => :catalina
-    sha256 "788d664fc14aca6ee4072e208930db6c6a8711bdbd6e79cd9f3cc38f69c77a2c" => :mojave
-    sha256 "0f222e06e1e48d3f9dfe271df5d1f0c0ae25995151c6900d68e73d9cd39eff8c" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "254fab48c4f812c65cc73a046a664b0a914ef745c832ab01c8706ee77de6a195"
+    sha256 cellar: :any,                 big_sur:       "cc2a5ebed503daa988847659ce72bcbafd44387ecebb55fa422631edb731cade"
+    sha256 cellar: :any,                 catalina:      "b6505ca02cb672280ce332952dd188b7ffd139b4b48b1afb33a1619143bfd126"
+    sha256 cellar: :any,                 mojave:        "fb4c73abb6b230ffc2cacf187114584a1e589e67f399b78a56396911b2e1b483"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "e8b8d18377e4dcf96cfdd986f9580ccab2a283707f7820d3024487a038ed4c0a"
   end
 
   depends_on "cmake" => :build
+
+  on_linux do
+    depends_on "freeglut"
+    depends_on "libxcursor"
+    depends_on "mesa"
+  end
 
   def install
     args = std_cmake_args + %w[
@@ -41,6 +49,12 @@ class Glfw < Formula
 
     system ENV.cc, "test.c", "-o", "test",
                    "-I#{include}", "-L#{lib}", "-lglfw"
+
+    on_linux do
+      # glfw does not work in headless mode
+      return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+    end
+
     system "./test"
   end
 end

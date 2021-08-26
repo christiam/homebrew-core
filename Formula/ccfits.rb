@@ -1,23 +1,37 @@
 class Ccfits < Formula
   desc "Object oriented interface to the cfitsio library"
   homepage "https://heasarc.gsfc.nasa.gov/fitsio/CCfits/"
-  url "https://heasarc.gsfc.nasa.gov/fitsio/CCfits/CCfits-2.5.tar.gz"
-  sha256 "938ecd25239e65f519b8d2b50702416edc723de5f0a5387cceea8c4004a44740"
+  url "https://heasarc.gsfc.nasa.gov/fitsio/CCfits/CCfits-2.6.tar.gz"
+  sha256 "2bb439db67e537d0671166ad4d522290859e8e56c2f495c76faa97bc91b28612"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?CCfits[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "fb3837dfbbd911a58b7ebddcc070c4ce00a1831c6587d2f8d402173a05dc1215" => :catalina
-    sha256 "bfd31cbc94ceba181a2267253516f4d76d77679f21aaf36a75892b3dd4afd8a1" => :mojave
-    sha256 "450c0b713f2ec2bc9a1b6ba9c4a2905f2b818fa4d143cf4b93d0031e0f7f357f" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "93653ea8290192929bc4b61b468fa55e4e1435e67dea0d6b232751dc610126bd"
+    sha256 cellar: :any,                 big_sur:       "504f3e52451e700b4562dd91e5017587ebe829aa25421600bb8cb01ee2faa571"
+    sha256 cellar: :any,                 catalina:      "fb2b7a32b1c881c91191aee126e556879184b2ac23a7c4dc62b88eb1328007af"
+    sha256 cellar: :any,                 mojave:        "d7111f916b0ee822f04fe233d00c5e66c151bd821a9ba8fc52365c2270e37fa7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "3ec9d494a486df7902b5848cfcc17479f3daa752fd164b0424ca15f0cb7e6c32"
   end
 
   depends_on "cfitsio"
 
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+    args = %W[
+      --disable-debug
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+    ]
+    on_linux do
+      # Remove references to brew's shims
+      args << "pfk_cxx_lib_path=/usr/bin/g++"
+    end
+
+    system "./configure", *args
     system "make"
     system "make", "install"
   end
@@ -33,6 +47,6 @@ class Ccfits < Formula
     EOS
     system ENV.cxx, "-std=c++11", "test.cpp", "-o", "test", "-I#{include}",
                     "-L#{lib}", "-lCCfits"
-    assert_match /the answer is -11/, shell_output("./test")
+    assert_match "the answer is -11", shell_output("./test")
   end
 end

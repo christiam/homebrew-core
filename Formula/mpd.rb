@@ -1,15 +1,17 @@
 class Mpd < Formula
   desc "Music Player Daemon"
   homepage "https://www.musicpd.org/"
-  url "https://www.musicpd.org/download/mpd/0.21/mpd-0.21.18.tar.xz"
-  sha256 "8782e66cd5afd6c92860725196b35b6df07d3d127ef70e900e144323089e9442"
+  url "https://www.musicpd.org/download/mpd/0.22/mpd-0.22.10.tar.xz"
+  sha256 "07c82535e9999c3d4a099d8e652c88724635125b3c9f265ba9b6f2974ff9e614"
+  license "GPL-2.0-or-later"
+  revision 2
   head "https://github.com/MusicPlayerDaemon/MPD.git"
 
   bottle do
-    cellar :any
-    sha256 "97205bdca3c0ab031163f0b6721a4a07072de25d98c9ebab9228c97a7e0ee651" => :catalina
-    sha256 "d50ccd6d119e4d7a8b2d5fb6267e2b576f2f8d35eb27f0e2885fc2f4b7db7ef6" => :mojave
-    sha256 "97c3161fd3a06c8158c388a3c2a094b4698f73ef7218270ede11d7bcd7f06d94" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "4f09ccdef7ef6dbab50b77c270ffcb55967181641313167d418ada86f62570e0"
+    sha256 cellar: :any, big_sur:       "94b46393a81c4f7901998f3cd8158e5ed55ee1bb123ed7618621cc16b35e8bca"
+    sha256 cellar: :any, catalina:      "74bc9b9b08386f85647e1dbd5c4df637b828bdce3d8065af3a1f05ab0b6fa237"
+    sha256 cellar: :any, mojave:        "640c1132db68cca3a02e5ccb332e1b47691713ed854648b26db8da717285f11c"
   end
 
   depends_on "boost" => :build
@@ -30,15 +32,20 @@ class Mpd < Formula
   depends_on "libmpdclient"
   depends_on "libnfs"
   depends_on "libsamplerate"
+  depends_on "libshout"
   depends_on "libupnp"
   depends_on "libvorbis"
+  depends_on macos: :mojave # requires C++17 features unavailable in High Sierra
   depends_on "opus"
   depends_on "sqlite"
 
-  # Fix compilation with Clang
-  # This patch backports https://github.com/MusicPlayerDaemon/MPD/commit/dca0519336586be95b920004178114a097681768
-  # Remove in next release
-  patch :DATA
+  uses_from_macos "curl"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     # mpd specifies -std=gnu++0x, but clang appears to try to build
@@ -46,8 +53,7 @@ class Mpd < Formula
     # The build is fine with G++.
     ENV.libcxx
 
-    args = %W[
-      --prefix=#{prefix}
+    args = std_meson_args + %W[
       --sysconfdir=#{etc}
       -Dlibwrap=disabled
       -Dmad=disabled
@@ -59,6 +65,7 @@ class Mpd < Formula
       -Dffmpeg=enabled
       -Dfluidsynth=enabled
       -Dnfs=enabled
+      -Dshout=enabled
       -Dupnp=enabled
       -Dvorbisenc=enabled
     ]
@@ -71,75 +78,48 @@ class Mpd < Formula
     (etc/"mpd").install "doc/mpdconf.example" => "mpd.conf"
   end
 
-  def caveats; <<~EOS
-    MPD requires a config file to start.
-    Please copy it from #{etc}/mpd/mpd.conf into one of these paths:
-      - ~/.mpd/mpd.conf
-      - ~/.mpdconf
-    and tailor it to your needs.
-  EOS
+  def caveats
+    <<~EOS
+      MPD requires a config file to start.
+      Please copy it from #{etc}/mpd/mpd.conf into one of these paths:
+        - ~/.mpd/mpd.conf
+        - ~/.mpdconf
+      and tailor it to your needs.
+    EOS
   end
 
-  plist_options :manual => "mpd"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/mpd</string>
-            <string>--no-daemon</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-        <key>ProcessType</key>
-        <string>Interactive</string>
-    </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"mpd", "--no-daemon"]
+    keep_alive true
+    working_dir HOMEBREW_PREFIX
   end
 
   test do
-    pid = fork do
-      exec "#{bin}/mpd --stdout --no-daemon --no-config"
+    on_linux do
+      # oss_output: Error opening OSS device "/dev/dsp": No such file or directory
+      # oss_output: Error opening OSS device "/dev/sound/dsp": No such file or directory
+      return if ENV["HOMEBREW_GITHUB_ACTIONS"]
     end
-    sleep 2
 
-    begin
-      ohai "Connect to MPD command (localhost:6600)"
-      TCPSocket.open("localhost", 6600) do |sock|
-        assert_match "OK MPD", sock.gets
-        ohai "Ping server"
-        sock.puts("ping")
-        assert_match "OK", sock.gets
-        sock.close
-      end
-    ensure
-      Process.kill "SIGINT", pid
-      Process.wait pid
+    require "expect"
+
+    port = free_port
+
+    (testpath/"mpd.conf").write <<~EOS
+      bind_to_address "127.0.0.1"
+      port "#{port}"
+    EOS
+
+    io = IO.popen("#{bin}/mpd --stdout --no-daemon #{testpath}/mpd.conf 2>&1", "r")
+    io.expect("output: Successfully detected a osx audio device", 30)
+
+    ohai "Connect to MPD command (localhost:#{port})"
+    TCPSocket.open("localhost", port) do |sock|
+      assert_match "OK MPD", sock.gets
+      ohai "Ping server"
+      sock.puts("ping")
+      assert_match "OK", sock.gets
+      sock.close
     end
   end
 end
-
-__END__
-diff --git a/src/util/Compiler.h b/src/util/Compiler.h
-index 96f63fae4..04e49bb61 100644
---- a/src/util/Compiler.h
-+++ b/src/util/Compiler.h
-@@ -145,7 +145,7 @@
-
- #if GCC_CHECK_VERSION(7,0)
- #define gcc_fallthrough __attribute__((fallthrough))
--#elif CLANG_CHECK_VERSION(10,0)
-+#elif CLANG_CHECK_VERSION(10,0) && defined(__cplusplus)
- #define gcc_fallthrough [[fallthrough]]
- #else
- #define gcc_fallthrough

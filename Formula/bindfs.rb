@@ -1,25 +1,31 @@
 class Bindfs < Formula
   desc "FUSE file system for mounting to another location"
   homepage "https://bindfs.org/"
-  url "https://bindfs.org/downloads/bindfs-1.14.2.tar.gz"
-  sha256 "698c8d02b4e77a71e52184bd66869f4d63add4411e76636ee045d154b374c57e"
+  url "https://bindfs.org/downloads/bindfs-1.15.1.tar.gz"
+  sha256 "04dd3584a6cdf9af4344d403c62185ca9fab31ce3ae5a25d0101bc10936c68ab"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any
-    sha256 "9ab13b9d34fa7b435f949c35fea8a685f2802c1ea958d8e74c16ad3dff7286b5" => :catalina
-    sha256 "1e061f3092a6cb781432f80b2b70f245a7ffcd30c3c75bf7c4235065c17d12ac" => :mojave
-    sha256 "0dc8db4676655204f096e427c1424e1a24939fceabf62c7623dc6d0d5a8c28cc" => :high_sierra
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "735ffeec80a1525bfcfe246c699b2a2890f900694b741a1646efeb0f5ba918bf"
   end
 
   head do
     url "https://github.com/mpartel/bindfs.git"
+
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
   depends_on "pkg-config" => :build
-  depends_on :osxfuse
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse"
+  end
 
   def install
     args = %W[
@@ -35,6 +41,18 @@ class Bindfs < Formula
     end
 
     system "make", "install"
+  end
+
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
+
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
   end
 
   test do

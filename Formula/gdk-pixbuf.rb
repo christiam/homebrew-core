@@ -1,24 +1,30 @@
 class GdkPixbuf < Formula
   desc "Toolkit for image loading and pixel buffer manipulation"
   homepage "https://gtk.org"
-  url "https://download.gnome.org/sources/gdk-pixbuf/2.40/gdk-pixbuf-2.40.0.tar.xz"
-  sha256 "1582595099537ca8ff3b99c6804350b4c058bb8ad67411bbaae024ee7cead4e6"
+  url "https://download.gnome.org/sources/gdk-pixbuf/2.42/gdk-pixbuf-2.42.6.tar.xz"
+  sha256 "c4a6b75b7ed8f58ca48da830b9fa00ed96d668d3ab4b1f723dcf902f78bde77f"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "bb817292ab8e01a155b663ece6a1b887bb3340c7bfabf567b83b55c7e1b84bd6" => :catalina
-    sha256 "9d9602f291e4023873a0f76cbff3e6c0de7456567ade57a178fad4939904043d" => :mojave
-    sha256 "9cfc180931b123287962d66652d847b404bda76ac4c75333b4145cfa145fc87f" => :high_sierra
+    sha256 arm64_big_sur: "1aa92bcea0846fe0b37a4d65bf5947f5c27ffc750a93bd94db69bfe25369fda3"
+    sha256 big_sur:       "f4cf795b20c84fb5074ceeeeaf7b1d22e164b7af13adb6d0b95e3655d867fd41"
+    sha256 catalina:      "94835aba06d5e7160fd19bb14e05d3aad2f27be4c7030c019e42208369cf6014"
+    sha256 mojave:        "4bd3543b83cd74bfd0de1bd94a9e0200374c0834ef636cfe99621fe3c2145aaa"
+    sha256 x86_64_linux:  "cd3d671f4129a4dddef888e1317b4e5840d217b75fee8e46a17b33630da674c8"
   end
 
   depends_on "gobject-introspection" => :build
   depends_on "meson" => :build
   depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "python" => :build
   depends_on "glib"
   depends_on "jpeg"
   depends_on "libpng"
   depends_on "libtiff"
+
+  on_linux do
+    depends_on "shared-mime-info"
+  end
 
   # gdk-pixbuf has an internal version number separate from the overall
   # version number that specifies the location of its module and cache
@@ -37,8 +43,7 @@ class GdkPixbuf < Formula
               "-DGDK_PIXBUF_LIBDIR=\"@0@\"'.format(gdk_pixbuf_libdir)",
               "-DGDK_PIXBUF_LIBDIR=\"@0@\"'.format('#{HOMEBREW_PREFIX}/lib')"
 
-    args = %W[
-      --prefix=#{prefix}
+    args = std_meson_args + %w[
       -Dx11=false
       -Ddocs=false
       -Dgir=true
@@ -103,8 +108,10 @@ class GdkPixbuf < Formula
       -lgdk_pixbuf-2.0
       -lglib-2.0
       -lgobject-2.0
-      -lintl
     ]
+    on_macos do
+      flags << "-lintl"
+    end
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

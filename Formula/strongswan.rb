@@ -1,13 +1,20 @@
 class Strongswan < Formula
   desc "VPN based on IPsec"
   homepage "https://www.strongswan.org"
-  url "https://download.strongswan.org/strongswan-5.8.2.tar.bz2"
-  sha256 "86900ddbe7337c923dadf2c8339ae8ed2b9158e3691745884d08ae534677430e"
+  url "https://download.strongswan.org/strongswan-5.9.3.tar.bz2"
+  sha256 "9325ab56a0a4e97e379401e1d942ce3e0d8b6372291350ab2caae0755862c6f7"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url "https://download.strongswan.org/"
+    regex(/href=.*?strongswan[._-]v?(\d+(?:\.\d+)+[a-z]?)\.t/i)
+  end
 
   bottle do
-    sha256 "09147538543405ab5feb83c4aad866d147ed3acdc6d67e3fc423b7d1aa968663" => :catalina
-    sha256 "1ec03a199f80d10c7726ed50d61ea92a0f1b250f292ba44986086814b1f51b35" => :mojave
-    sha256 "507157d52fbbe0d7ba3194abfa56dfbdb7cd0b98dcfcf7b54af8d39e1c0ed595" => :high_sierra
+    sha256 arm64_big_sur: "0f1e4ce71721da3159ae758863a23e94daf4830d3c84eb431d8edfb673b1a51c"
+    sha256 big_sur:       "210a8f1fe7469c4f660259de33605226f5fa6c02436888754a581e0f35c8f607"
+    sha256 catalina:      "bec3e5c02784130c788a861c3ac78e88b8080f825e9ac3ec9a575891a341de6d"
+    sha256 mojave:        "307035e5a5807685ba2c960a4ec68d533039d3a3157adf351108e63b7db551c2"
   end
 
   head do
@@ -65,13 +72,13 @@ class Strongswan < Formula
 
     system "./autogen.sh" if build.head?
     system "./configure", *args
-    system "make", "check"
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    You will have to run both "ipsec" and "charon-cmd" with "sudo".
-  EOS
+  def caveats
+    <<~EOS
+      You will have to run both "ipsec" and "charon-cmd" with "sudo".
+    EOS
   end
 
   test do

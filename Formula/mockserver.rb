@@ -1,16 +1,25 @@
 class Mockserver < Formula
   desc "Mock HTTP server and proxy"
   homepage "https://www.mock-server.com/"
-  url "https://oss.sonatype.org/content/repositories/releases/org/mock-server/mockserver-netty/5.8.1/mockserver-netty-5.8.1-brew-tar.tar"
-  sha256 "c1cde81581fb54973b00cb398044fa4e77150b879cd9b200192cc28d45446953"
+  url "https://oss.sonatype.org/content/repositories/releases/org/mock-server/mockserver-netty/5.11.2/mockserver-netty-5.11.2-brew-tar.tar"
+  sha256 "1758bb80c3e5cd250b55757a53105db7b03ff1b05d2dfca501ce5795feff8756"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  livecheck do
+    url "https://oss.sonatype.org/content/repositories/releases/org/mock-server/mockserver-netty/"
+    regex(%r{href=.*?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
-  depends_on :java => "1.8+"
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "3ee84c853d1d2ecce352978200c6133696e9f7b8500186864cd130cdfa34d9d9"
+  end
+
+  depends_on "openjdk"
 
   def install
+    inreplace "bin/run_mockserver.sh", "/usr/local", HOMEBREW_PREFIX
     libexec.install Dir["*"]
-    bin.install_symlink "#{libexec}/bin/run_mockserver.sh" => "mockserver"
+    (bin/"mockserver").write_env_script libexec/"bin/run_mockserver.sh", JAVA_HOME: Formula["openjdk"].opt_prefix
 
     lib.install_symlink "#{libexec}/lib" => "mockserver"
 
@@ -21,11 +30,7 @@ class Mockserver < Formula
   end
 
   test do
-    require "socket"
-
-    server = TCPServer.new(0)
-    port = server.addr[1]
-    server.close
+    port = free_port
 
     mockserver = fork do
       exec "#{bin}/mockserver", "-serverPort", port.to_s

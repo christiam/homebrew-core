@@ -1,21 +1,59 @@
 class I386ElfGdb < Formula
   desc "GNU debugger for i386-elf cross development"
   homepage "https://www.gnu.org/software/gdb/"
-  url "https://ftp.gnu.org/gnu/gdb/gdb-8.3.tar.xz"
-  sha256 "802f7ee309dcc547d65a68d61ebd6526762d26c3051f52caebe2189ac1ffd72e"
+  url "https://ftp.gnu.org/gnu/gdb/gdb-10.2.tar.xz"
+  mirror "https://ftpmirror.gnu.org/gdb/gdb-10.2.tar.xz"
+  sha256 "aaa1223d534c9b700a8bec952d9748ee1977513f178727e1bee520ee000b4f29"
+  license "GPL-3.0-or-later"
+  revision 1
+  head "https://sourceware.org/git/binutils-gdb.git", branch: "master"
+
+  livecheck do
+    formula "gdb"
+  end
 
   bottle do
-    sha256 "78bc76a038e82c274fcbf1acb1a731d3e93e137501f2e93578998f2ad3d69707" => :catalina
-    sha256 "bdecb45d09a045fe1ffaa9e489ca5d5cf4bc52ad317066ddebcc6fef762214b0" => :mojave
-    sha256 "f24d032ddfe38c469592fcd27de1f2cd76748065291003802f63ed2eeefc0802" => :high_sierra
-    sha256 "db2569c5307b05e3806d5fe4072782b8f9601abe60779144b66a45c1fe6abc8b" => :sierra
+    sha256 arm64_big_sur: "b4c91d248b5ba7d765c277903ac03f1f3d35a77079ae3acbdba8768a9dcb4c55"
+    sha256 big_sur:       "dbf60ac8e71d01328d134cb1eaa47cd734dd612cd67cc7b730d56afc138ea969"
+    sha256 catalina:      "4ca5521aab0566367e9a72767225d08667efb40e609c0b8e9e4ff7464f755052"
+    sha256 mojave:        "85a64a23e61b011e32cff2c56e7915f32a8d8d669be09e4698b431412e8ea7b0"
+    sha256 x86_64_linux:  "919e6534fce532ad0395fe4fd756004e3ebe25fd653aff1df825455b68643f7c"
+  end
+
+  depends_on "i686-elf-gcc" => :test
+  depends_on "python@3.9"
+  depends_on "xz" # required for lzma support
+
+  uses_from_macos "texinfo" => :build
+  uses_from_macos "zlib"
+
+  # Fix for https://sourceware.org/bugzilla/show_bug.cgi?id=26949#c8
+  # Remove when upstream includes this commit
+  # https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=b413232211bf
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/242630de4b54d6c57721e12ce88988a0f4e41202/gdb/gdb-10.2.patch"
+    sha256 "36652e9d97037266650a3b31f9f39539c4b376d31016fa4fc325dc0aa7930acc"
   end
 
   def install
+    target = "i386-elf"
+    args = %W[
+      --target=#{target}
+      --prefix=#{prefix}
+      --datarootdir=#{share}/#{target}
+      --includedir=#{include}/#{target}
+      --infodir=#{info}/#{target}
+      --mandir=#{man}
+      --disable-debug
+      --disable-dependency-tracking
+      --with-lzma
+      --with-python=#{Formula["python@3.9"].opt_bin}/python3
+      --with-system-zlib
+      --disable-binutils
+    ]
+
     mkdir "build" do
-      system "../configure", "--target=i386-elf",
-                             "--prefix=#{prefix}",
-                             "--disable-werror"
+      system "../configure", *args
       system "make"
 
       # Don't install bfd or opcodes, as they are provided by binutils
@@ -24,6 +62,9 @@ class I386ElfGdb < Formula
   end
 
   test do
-    system "#{bin}/i386-elf-gdb", "#{bin}/i386-elf-gdb", "-configuration"
+    (testpath/"test.c").write "void _start(void) {}"
+    system Formula["i686-elf-gcc"].bin/"i686-elf-gcc", "-g", "-nostdlib", "test.c"
+    assert_match "Symbol \"_start\" is a function at address 0x",
+                 shell_output("#{bin}/i386-elf-gdb -batch -ex 'info address _start' a.out")
   end
 end

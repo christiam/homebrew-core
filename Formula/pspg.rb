@@ -1,15 +1,17 @@
 class Pspg < Formula
   desc "Unix pager optimized for psql"
   homepage "https://github.com/okbob/pspg"
-  url "https://github.com/okbob/pspg/archive/2.6.4.tar.gz"
-  sha256 "2d2b14a87056ce09625298de22629866c3c14aa55d46ea7ee627a682b9ea804e"
+  url "https://github.com/okbob/pspg/archive/5.3.4.tar.gz"
+  sha256 "598c672d955b4f9ae6ddfe638b2f2604830525b4d871f0ff360a451ff7af4fda"
+  license "BSD-2-Clause"
   head "https://github.com/okbob/pspg.git"
 
   bottle do
-    cellar :any
-    sha256 "282603c8a30facf530e56c5ae9afc1a18c6cc967d3d261598e9a1c098a027ce8" => :catalina
-    sha256 "6850be58486b6c7884a2445377235fd44d89692b1f18cffcf2f902075b5d9d98" => :mojave
-    sha256 "8d57ad89ea8726a897ab60afc6b7e3b09799f388189223dda876266f655999ed" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "1300e45afdc2c3463a9b500e66a46e6294c6a7d03619b36abe04bcb12212efc5"
+    sha256 cellar: :any,                 big_sur:       "3d43fa8aa638c1e4250b96099193d891e4e78d424765e289b12c25d529e73fb6"
+    sha256 cellar: :any,                 catalina:      "47ae8a25ac576705f7222ff4bee35ae9a077ebb1905b95a7b9e79545f3eca432"
+    sha256 cellar: :any,                 mojave:        "f2ec18b523f1356cf6393621ed1d78ae34baac9d7017e73b56b047f2c91349c5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "90648d5627fb4bfb2c11cdecb4b60b62bbe0a128df2a8671c2585854b4b18c3e"
   end
 
   depends_on "libpq"
@@ -22,15 +24,16 @@ class Pspg < Formula
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    Add the following line to your psql profile (e.g. ~/.psqlrc)
-      \\setenv PAGER pspg
-      \\pset border 2
-      \\pset linestyle unicode
-  EOS
+  def caveats
+    <<~EOS
+      Add the following line to your psql profile (e.g. ~/.psqlrc)
+        \\setenv PAGER pspg
+        \\pset border 2
+        \\pset linestyle unicode
+    EOS
   end
 
   test do
-    assert_match "pspg-#{version.to_f}", shell_output("#{bin}/pspg --version")
+    assert_match "pspg-#{version}", shell_output("#{bin}/pspg --version")
   end
 end

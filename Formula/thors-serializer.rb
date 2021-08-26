@@ -2,24 +2,32 @@ class ThorsSerializer < Formula
   desc "Declarative serialization library (JSON/YAML) for C++"
   homepage "https://github.com/Loki-Astari/ThorsSerializer"
   url "https://github.com/Loki-Astari/ThorsSerializer.git",
-      :tag      => "1.13.8",
-      :revision => "30961b11a014649f5609199467efcf8147791f49"
+      tag:      "2.2.8",
+      revision: "f1f665fd55ca81acbea0cf9b081765586b194688"
+  license "MIT"
 
   bottle do
-    cellar :any
-    sha256 "ef0908820acc388838e8cccc7f0ff2ee386c2e53d5cc2c5c36be15c97245e763" => :catalina
-    sha256 "3d011528fed969a558de8ab2e934a2dd3ebc5d214be7a4b349402e62c7f79dc0" => :mojave
-    sha256 "8cb508500dca074ad4a887342eb58742ee105469ba026840becf458a32b448f0" => :high_sierra
-    sha256 "410b0132998dd4954fc452f62fad535b572ca39a6cf0e18baeab78242523a07a" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "6ace458d942191d9b1d5c47ee7f8f01384e5d03e234dbee2c061aba01f4cb61b"
+    sha256 cellar: :any,                 big_sur:       "d5045397ac4a47c33712f87b83b3ff7ca175820be9db331e22d1aed6e9df548b"
+    sha256 cellar: :any,                 catalina:      "b795c7bc69d7b80b57e886c4e62f7fd6cdf60d8c7d1b09fd3e3f68347c306fad"
+    sha256 cellar: :any,                 mojave:        "1363dd063032942dc5c8f280555d6bf47e77db1e40f63080d5ab7fce478b97ba"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "3f478a995575e84294e27888bb1bff89de2fda695dfb245690019fd87340ac6a"
   end
 
+  depends_on "boost" => :build
+  depends_on "bzip2"
   depends_on "libyaml"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     ENV["COV"] = "gcov"
 
-    system "./configure", "--disable-binary",
-                          "--disable-vera",
+    system "./configure", "--disable-vera",
                           "--prefix=#{prefix}"
     system "make"
     system "make", "install"
@@ -33,22 +41,22 @@ class ThorsSerializer < Formula
       #include <iostream>
       #include <string>
 
-      struct Block
+      struct HomeBrewBlock
       {
           std::string             key;
           int                     code;
       };
-      ThorsAnvil_MakeTrait(Block, key, code);
+      ThorsAnvil_MakeTrait(HomeBrewBlock, key, code);
 
       int main()
       {
-          using ThorsAnvil::Serialize::jsonImport;
-          using ThorsAnvil::Serialize::jsonExport;
+          using ThorsAnvil::Serialize::jsonImporter;
+          using ThorsAnvil::Serialize::jsonExporter;
 
           std::stringstream   inputData(R"({"key":"XYZ","code":37373})");
 
-          Block    object;
-          inputData >> jsonImport(object);
+          HomeBrewBlock    object;
+          inputData >> jsonImporter(object);
 
           if (object.key != "XYZ" || object.code != 37373) {
               std::cerr << "Fail";
@@ -58,8 +66,9 @@ class ThorsSerializer < Formula
           return 0;
       }
     EOS
-    system ENV.cxx, "-std=c++14", "test.cpp", "-o", "test",
-           "-I#{include}", "-L#{lib}", "-lThorSerialize17"
+    system ENV.cxx, "-std=c++17", "test.cpp", "-o", "test",
+           "-I#{Formula["boost"].opt_include}",
+           "-I#{include}", "-L#{lib}", "-lThorSerialize17", "-lThorsLogging17", "-ldl"
     system "./test"
   end
 end

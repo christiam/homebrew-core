@@ -3,32 +3,33 @@ class Pylint < Formula
 
   desc "It's not just a linter that annoys you!"
   homepage "https://github.com/PyCQA/pylint"
-  url "https://files.pythonhosted.org/packages/93/eb/851ab1d1ca6b37babd326dfa517b432963c54eda26c730353306aa0cdf4d/pylint-2.4.4.tar.gz"
-  sha256 "3db5468ad013380e987410a8d6956226963aed94ecb5f9d3a28acca6d9ac36cd"
-  revision 1
+  url "https://files.pythonhosted.org/packages/5f/82/b14e9226d11b606ec56af631beef422c4dfddb7a03b8906e53124f4a7079/pylint-2.10.2.tar.gz"
+  sha256 "6758cce3ddbab60c52b57dcc07f0c5d779e5daf0cf50f6faacbef1d3ea62d2a1"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "0bbd3649c3351d92408a4148511f34fc4caae13cb8c10abd97b45fb7647f00a8" => :catalina
-    sha256 "b6fbfb2a34d9779ac80e6019dcbc2cea14b228021db76b393fc0ab4ac0b960e0" => :mojave
-    sha256 "005ac3a5b2d5ef4185a16f6ffc6fdbe7efb2e35da818e25f6d715451a1f129ea" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "33403d76452d60ac934468591aa720e734e9be185f05304ec4b020e297f3af71"
+    sha256 cellar: :any_skip_relocation, big_sur:       "2c47258a377f74b2585e26ba2c3b1ce4081678a729889b49733ce6b55413f339"
+    sha256 cellar: :any_skip_relocation, catalina:      "dc3d552bd7f83c6f78299a6568189f6bf3f09fb5b37ea578e6688cfecde87c9a"
+    sha256 cellar: :any_skip_relocation, mojave:        "8316776d64de300b16e5286f9ca04684850eaace5934c6e88f95ad7f57c19633"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "e0fd9bf1afd11310f291df69d43596acaa1661a08d9312265e2f5704844aa205"
   end
 
-  depends_on "python@3.8"
+  depends_on "python@3.9"
 
   resource "astroid" do
-    url "https://files.pythonhosted.org/packages/40/df/70dfe3eed7352dd3f5c7cc74518ceed78230b2ca9d7d60dbabd81d5390ba/astroid-2.3.3.tar.gz"
-    sha256 "71ea07f44df9568a75d0f354c49143a4575d90645e9fead6dfb52c26a85ed13a"
+    url "https://files.pythonhosted.org/packages/6f/94/88d24ff14d5e00e78ad7f940dec22d9e95234a2bbf1c16ebcfa19d761ac6/astroid-2.7.2.tar.gz"
+    sha256 "b6c2d75cd7c2982d09e7d41d70213e863b3ba34d3bd4014e08f167cee966e99e"
   end
 
   resource "isort" do
-    url "https://files.pythonhosted.org/packages/43/00/8705e8d0c05ba22f042634f791a61f4c678c32175763dcf2ca2a133f4739/isort-4.3.21.tar.gz"
-    sha256 "54da7e92468955c4fceacd0c86bd0ec997b0e1ee80d97f67c35a78b719dccab1"
+    url "https://files.pythonhosted.org/packages/1c/34/ed9178b5b23ade4561bf77b91856e0e3bc094620fd81bd74d535817a0f0d/isort-5.9.3.tar.gz"
+    sha256 "9c2ea1e62d871267b78307fe511c0838ba0da28698c5732d54e2790bf3ba9899"
   end
 
   resource "lazy-object-proxy" do
-    url "https://files.pythonhosted.org/packages/07/3f/a3d687f83c7d44970f70ff0400677746c8860b11f0c08f6b4e07205f0cdc/lazy-object-proxy-1.4.3.tar.gz"
-    sha256 "f3900e8a5de27447acbf900b4750b0ddfd7ec1ea7fbaf11dfa911141bc522af0"
+    url "https://files.pythonhosted.org/packages/bb/f5/646893a04dcf10d4acddb61c632fd53abb3e942e791317dcdd57f5800108/lazy-object-proxy-1.6.0.tar.gz"
+    sha256 "489000d368377571c6f982fba6497f2aa13c6d1facc40660963da62f5c379726"
   end
 
   resource "mccabe" do
@@ -36,19 +37,19 @@ class Pylint < Formula
     sha256 "dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"
   end
 
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/94/3e/edcf6fef41d89187df7e38e868b2dd2182677922b600e880baad7749c865/six-1.13.0.tar.gz"
-    sha256 "30f610279e8b2578cab6db20741130331735c781b56053c59c4076da27f06b66"
+  resource "platformdirs" do
+    url "https://files.pythonhosted.org/packages/58/cb/ee4234464290e3dee893cf37d1adc87c24ade86ff6fc55f04a9bf9f1ec4f/platformdirs-2.2.0.tar.gz"
+    sha256 "632daad3ab546bd8e6af0537d09805cec458dce201bccfe23012df73332e181e"
   end
 
-  resource "typed-ast" do
-    url "https://files.pythonhosted.org/packages/34/de/d0cfe2ea7ddfd8b2b8374ed2e04eeb08b6ee6e1e84081d151341bba596e5/typed_ast-1.4.0.tar.gz"
-    sha256 "66480f95b8167c9c5c5c87f32cf437d585937970f3fc24386f313a4c97b44e34"
+  resource "toml" do
+    url "https://files.pythonhosted.org/packages/be/ba/1f744cdc819428fc6b5084ec34d9b30660f6f9daaf70eead706e3203ec3c/toml-0.10.2.tar.gz"
+    sha256 "b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"
   end
 
   resource "wrapt" do
-    url "https://files.pythonhosted.org/packages/23/84/323c2415280bc4fc880ac5050dddfb3c8062c2552b34c2e512eb4aa68f79/wrapt-1.11.2.tar.gz"
-    sha256 "565a021fd19419476b9362b05eeaa094178de64f8361e44468f9e9d7843901e1"
+    url "https://files.pythonhosted.org/packages/82/f7/e43cefbe88c5fd371f4cf0cf5eb3feccd07515af9fd6cf7dbf1d1793a797/wrapt-1.12.1.tar.gz"
+    sha256 "b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"
   end
 
   def install

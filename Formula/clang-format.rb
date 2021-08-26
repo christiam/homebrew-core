@@ -1,59 +1,66 @@
 class ClangFormat < Formula
   desc "Formatting tools for C, C++, Obj-C, Java, JavaScript, TypeScript"
   homepage "https://clang.llvm.org/docs/ClangFormat.html"
-  version "2019-05-14"
+  # The LLVM Project is under the Apache License v2.0 with LLVM Exceptions
+  license "Apache-2.0"
+  version_scheme 1
+  head "https://github.com/llvm/llvm-project.git", branch: "main"
 
   stable do
-    depends_on "subversion" => :build
-    url "https://llvm.org/svn/llvm-project/llvm/tags/google/stable/2019-05-14/", :using => :svn
+    url "https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/llvm-12.0.1.src.tar.xz"
+    sha256 "7d9a8405f557cefc5a21bf5672af73903b64749d9bc3a50322239f56f34ffddf"
 
     resource "clang" do
-      url "https://llvm.org/svn/llvm-project/cfe/tags/google/stable/2019-05-14/", :using => :svn
+      url "https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang-12.0.1.src.tar.xz"
+      sha256 "6e912133bcf56e9cfe6a346fa7e5c52c2cde3e4e48b7a6cc6fcc7c75047da45f"
     end
+  end
 
-    resource "libcxx" do
-      url "https://releases.llvm.org/9.0.0/libcxx-9.0.0.src.tar.xz"
-      sha256 "3c4162972b5d3204ba47ac384aa456855a17b5e97422723d4758251acf1ed28c"
-    end
+  livecheck do
+    url :stable
+    strategy :github_latest
+    regex(%r{href=.*?/tag/llvmorg[._-]v?(\d+(?:\.\d+)+)}i)
   end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "811e557c5b540317ff532959f3b074d6b9763abfb58186f3a1cbeb10acfb3358" => :catalina
-    sha256 "beb4842dafb9092fe56ba4dc94030b581d3ae85ae914b2c2a37ae872c88dbd34" => :mojave
-    sha256 "dcea54b1734a2385a7275deb7b7fe9970cf06387d9051103476a0082614849f0" => :high_sierra
-  end
-
-  head do
-    url "https://git.llvm.org/git/llvm.git"
-
-    resource "clang" do
-      url "https://git.llvm.org/git/clang.git"
-    end
-
-    resource "libcxx" do
-      url "https://git.llvm.org/git/libcxx.git"
-    end
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "4f6a5ed840cccc724fa7018634a10cb793c303772076ffd6f001f445235df63c"
+    sha256 cellar: :any_skip_relocation, big_sur:       "2ecea9cf5259a440a55eb7493c9a2e2c831d94c1aa0f01ef93707415129a2e08"
+    sha256 cellar: :any_skip_relocation, catalina:      "300fad934c6c2bbb348a1293e2d56813b40547c8e6bec9b50236dba15e3c5f1e"
+    sha256 cellar: :any_skip_relocation, mojave:        "e532d4fe08eb491426eb1bb290f8c6275088ac6cee9b2d97e74ae77a95f7a9c0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "389471e5cf1b8ed375389e7e9858cec22464a2c22227b232daea0980ce322df1"
   end
 
   depends_on "cmake" => :build
   depends_on "ninja" => :build
 
-  def install
-    (buildpath/"projects/libcxx").install resource("libcxx")
-    (buildpath/"tools/clang").install resource("clang")
+  uses_from_macos "libxml2"
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
 
-    mkdir "build" do
+  on_linux do
+    keg_only "it conflicts with llvm"
+  end
+
+  def install
+    if build.head?
+      ln_s buildpath/"clang", buildpath/"llvm/tools/clang"
+    else
+      (buildpath/"tools/clang").install resource("clang")
+    end
+
+    llvmpath = build.head? ? buildpath/"llvm" : buildpath
+
+    mkdir llvmpath/"build" do
       args = std_cmake_args
-      args << "-DCMAKE_OSX_SYSROOT=/" unless MacOS::Xcode.installed?
-      args << "-DLLVM_ENABLE_LIBCXX=ON"
+      args << "-DLLVM_EXTERNAL_PROJECTS=\"clang\""
       args << ".."
       system "cmake", "-G", "Ninja", *args
       system "ninja", "clang-format"
-      bin.install "bin/clang-format"
     end
-    bin.install "tools/clang/tools/clang-format/git-clang-format"
-    (share/"clang").install Dir["tools/clang/tools/clang-format/clang-format*"]
+
+    bin.install llvmpath/"build/bin/clang-format"
+    bin.install llvmpath/"tools/clang/tools/clang-format/git-clang-format"
+    (share/"clang").install Dir[llvmpath/"tools/clang/tools/clang-format/clang-format*"]
   end
 
   test do

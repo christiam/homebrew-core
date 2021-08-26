@@ -3,32 +3,30 @@ class Cpprestsdk < Formula
   homepage "https://github.com/Microsoft/cpprestsdk"
   # pull from git tag to get submodules
   url "https://github.com/Microsoft/cpprestsdk.git",
-      :tag      => "v2.10.14",
-      :revision => "6f602bee67b088a299d7901534af3bce6334ab38"
-  revision 1
-  head "https://github.com/Microsoft/cpprestsdk.git", :branch => "development"
+      tag:      "2.10.18",
+      revision: "122d09549201da5383321d870bed45ecb9e168c5"
+  license "MIT"
+  head "https://github.com/Microsoft/cpprestsdk.git", branch: "development"
 
   bottle do
-    cellar :any
-    sha256 "b4e95a61678b159d693c5fa8f30ad5e234b6f8c81ee811e80094aa8eac58ebd5" => :catalina
-    sha256 "2b8117876aa647899436583bfed1008ae58c1cab42e8f9bf8a486672fcf50293" => :mojave
-    sha256 "e662c92e6525fc3ca1f68bff3fea5d8c789e9e0dddec494ec25736d958cdd5ad" => :high_sierra
-    sha256 "c68b6d8dbdbfc14d223cde0c310384994ed113ad0f5a688391e245d94f580703" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "ac66587bc353b3358ff11606ca3952fa57f7dc57a5f59414ed8bfa62e90ff858"
+    sha256 cellar: :any,                 big_sur:       "c65b7f42fed4091750be219a60774854de46903c74ef99def1b73f905bb0728f"
+    sha256 cellar: :any,                 catalina:      "f89613fba00d0feaa3e55508f3fb122dc8f4126b679e55c22fd228ed44d0c1c4"
+    sha256 cellar: :any,                 mojave:        "6805fd31638651ef090d68e07cdea155d70b23365828cd1adbfd60fc132eedc3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "a50ae9413de519a390c5864972bd19432a203cdea200158e1110671e969385c1"
   end
 
   depends_on "cmake" => :build
+  depends_on "pkg-config" => :build
   depends_on "boost"
   depends_on "openssl@1.1"
 
-  # Fix for boost 1.70.0 https://github.com/microsoft/cpprestsdk/issues/1054
-  # From websocketpp pull request https://github.com/zaphoyd/websocketpp/pull/814
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/85fa66a9/cpprestsdk/2.10.14.diff"
-    sha256 "fdfd1d6c3108bd463f3a6e3c8056a4f82268d6def1867b5fbbd9682f617c8c25"
-  end
+  uses_from_macos "zlib"
 
   def install
-    system "cmake", "-DBUILD_SAMPLES=OFF", "-DBUILD_TESTS=OFF", "Release", *std_cmake_args
+    system "cmake", "-DBUILD_SAMPLES=OFF", "-DBUILD_TESTS=OFF",
+                    "-DOPENSSL_ROOT_DIR=#{Formula["openssl@1.1"]}.opt_prefix",
+                    "Release", *std_cmake_args
     system "make", "install"
   end
 
@@ -37,18 +35,16 @@ class Cpprestsdk < Formula
       #include <iostream>
       #include <cpprest/http_client.h>
       int main() {
-        web::http::client::http_client client(U("https://github.com/"));
+        web::http::client::http_client client(U("https://example.com/"));
         std::cout << client.request(web::http::methods::GET).get().extract_string().get() << std::endl;
       }
     EOS
-    flags = ["-stdlib=libc++", "-std=c++11", "-I#{include}",
-             "-I#{Formula["boost"].include}",
-             "-I#{Formula["openssl@1.1"].include}", "-L#{lib}",
-             "-L#{Formula["openssl@1.1"].lib}", "-L#{Formula["boost"].lib}",
-             "-lssl", "-lcrypto", "-lboost_random", "-lboost_chrono",
-             "-lboost_thread-mt", "-lboost_system-mt", "-lboost_regex",
-             "-lboost_filesystem", "-lcpprest"] + ENV.cflags.to_s.split
-    system ENV.cxx, "-o", "test_cpprest", "test.cc", *flags
-    system "./test_cpprest"
+    system ENV.cxx, "test.cc", "-std=c++11",
+                    "-I#{Formula["boost"].include}", "-I#{Formula["openssl@1.1"].include}", "-I#{include}",
+                    "-L#{Formula["boost"].lib}", "-L#{Formula["openssl@1.1"].lib}", "-L#{lib}",
+                    "-lssl", "-lcrypto", "-lboost_random-mt", "-lboost_chrono-mt", "-lboost_thread-mt",
+                    "-lboost_system-mt", "-lboost_filesystem-mt", "-lcpprest",
+                    "-o", "test_cpprest"
+    assert_match "<title>Example Domain</title>", shell_output("./test_cpprest")
   end
 end

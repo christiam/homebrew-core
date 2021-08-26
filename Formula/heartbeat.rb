@@ -1,54 +1,38 @@
 class Heartbeat < Formula
   desc "Lightweight Shipper for Uptime Monitoring"
-  homepage "https://www.elastic.co/products/beats/heartbeat"
-  # Pinned at 6.2.x because of a licencing issue
-  # See: https://github.com/Homebrew/homebrew-core/pull/28995
-  url "https://github.com/elastic/beats/archive/v6.2.4.tar.gz"
-  sha256 "87d863cf55863329ca80e76c3d813af2960492f4834d4fea919f1d4b49aaf699"
+  homepage "https://www.elastic.co/beats/heartbeat"
+  url "https://github.com/elastic/beats.git",
+      tag:      "v7.14.0",
+      revision: "e127fc31fc6c00fdf8649808f9421d8f8c28b5db"
+  license "Apache-2.0"
   head "https://github.com/elastic/beats.git"
 
   bottle do
-    cellar :any_skip_relocation
     rebuild 1
-    sha256 "14c0b07ea98e6e200ba4669b11a7bba371356c31748fcc90b8033001c84b9310" => :catalina
-    sha256 "41bc5429f96531dee4d989d5b5bf59c5183c3be8bf2218f3231d4b3e6b0e9a13" => :mojave
-    sha256 "ad880a8fb097c0e9a3b61de9cd53b2cfefb6d19effdda945e4f2f3bde9daba50" => :high_sierra
-    sha256 "b6c3d3d20c0154a66847ed9837247964c874eb559b5ad8bc451ba6b660cd0256" => :sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "4f153a1a9e0941fdabe6f2118e8e163da132bf04b05bffedc5a7d734ae4ee8a5"
+    sha256 cellar: :any_skip_relocation, big_sur:       "615d16e62d4e262557e41b9fe6a956498c029c61da912a11ce91e4d425eee041"
+    sha256 cellar: :any_skip_relocation, catalina:      "62e6a6d81168386e31a5ecbd8d659cec4c2cd224a9cf3d03996b4ee8da06b919"
+    sha256 cellar: :any_skip_relocation, mojave:        "f5b1d88024a3226b6f952a931f975fa723588c9b48e56ab5b4a6fc896bb35322"
   end
 
   depends_on "go" => :build
-  depends_on "python" => :build
-
-  resource "virtualenv" do
-    url "https://files.pythonhosted.org/packages/b1/72/2d70c5a1de409ceb3a27ff2ec007ecdd5cc52239e7c74990e32af57affe9/virtualenv-15.2.0.tar.gz"
-    sha256 "1d7e241b431e7afce47e77f8843a276f652699d1fa4f93b9d8ce0076fd7b0b54"
-  end
+  depends_on "mage" => :build
+  depends_on "python@3.9" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/elastic/beats").install buildpath.children
+    # remove non open source files
+    rm_rf "x-pack"
 
-    xy = Language::Python.major_minor_version "python3"
-    ENV.prepend_create_path "PYTHONPATH", buildpath/"vendor/lib/python#{xy}/site-packages"
-
-    resource("virtualenv").stage do
-      system "python3", *Language::Python.setup_install_args(buildpath/"vendor")
-    end
-
-    ENV.prepend_path "PATH", buildpath/"vendor/bin"
-
-    cd "src/github.com/elastic/beats/heartbeat" do
-      system "make"
+    cd "heartbeat" do
       # prevent downloading binary wheels during python setup
-      system "make", "PIP_INSTALL_COMMANDS=--no-binary :all", "python-env"
-      system "make", "DEV_OS=darwin", "update"
+      system "make", "PIP_INSTALL_PARAMS=--no-binary :all", "python-env"
+      system "mage", "-v", "build"
+      ENV.deparallelize
+      system "mage", "-v", "update"
 
       (etc/"heartbeat").install Dir["heartbeat.*", "fields.yml"]
       (libexec/"bin").install "heartbeat"
-      prefix.install "_meta/kibana"
     end
-
-    prefix.install_metafiles buildpath/"src/github.com/elastic/beats"
 
     (bin/"heartbeat").write <<~EOS
       #!/bin/sh
@@ -66,31 +50,12 @@ class Heartbeat < Formula
     (var/"log/heartbeat").mkpath
   end
 
-  plist_options :manual => "heartbeat"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>Program</key>
-        <string>#{opt_bin}/heartbeat</string>
-        <key>RunAtLoad</key>
-        <true/>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run opt_bin/"heartbeat"
   end
 
   test do
-    require "socket"
-
-    server = TCPServer.new(0)
-    port = server.addr[1]
-    server.close
+    port = free_port
 
     (testpath/"config/heartbeat.yml").write <<~EOS
       heartbeat.monitors:
@@ -105,19 +70,13 @@ class Heartbeat < Formula
         codec.format:
           string: '%{[monitor]}'
     EOS
-    pid = fork do
+    fork do
       exec bin/"heartbeat", "-path.config", testpath/"config", "-path.data",
                             testpath/"data"
     end
     sleep 5
-
-    begin
-      assert_match "hello", pipe_output("nc -c -l #{port}", "goodbye\n", 0)
-      sleep 5
-      assert_match "\"status\":\"up\"", (testpath/"heartbeat/heartbeat").read
-    ensure
-      Process.kill "SIGINT", pid
-      Process.wait pid
-    end
+    assert_match "hello", pipe_output("nc -l #{port}", "goodbye\n", 0)
+    sleep 5
+    assert_match "\"status\":\"up\"", (testpath/"heartbeat/heartbeat").read
   end
 end

@@ -1,14 +1,20 @@
 class Widelands < Formula
   desc "Free real-time strategy game like Settlers II"
   homepage "https://www.widelands.org/"
-  url "https://launchpad.net/widelands/build20/build20/+download/widelands-build20.tar.bz2"
-  sha256 "38594d98c74f357d4c31dd8ee2b056bfe921f42935935af915d11b792677bcb2"
-  revision 2
+  url "https://github.com/widelands/widelands/archive/v1.0.tar.gz"
+  sha256 "1dab0c4062873cc72c5e0558f9e9620b0ef185f1a78923a77c4ce5b9ed76031a"
+  version_scheme 1
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    sha256 "99de8c47d5824abd73dca688f63c4d9091b9423bf1d054b21c614e571ddbf329" => :catalina
-    sha256 "1c0c8a4cb4e3d2a9db80409c4ecaf4f5fecab339fd0c1bc55090a82d7ef344c4" => :mojave
-    sha256 "69e6610a6057de646d76598f1e9f21570f340293d3c69daa88c502750e60dab3" => :high_sierra
+    sha256 arm64_big_sur: "8f0377b940f20c79b0da12f8b5ae72d95424456b76c01d9b2f8f3032eae2b529"
+    sha256 big_sur:       "443b39115903be7bd40d1f2353197a062a1210c42ff93f446ffc448a3ea5a183"
+    sha256 catalina:      "fa60c7429eda358d559ae1b1d5b0db456135c24bfc8ad35f8668f77c3e09cf51"
+    sha256 mojave:        "26663b82b323e4d087313ec8496f599d2aee39d5cb06c56da5576c257bca14b0"
   end
 
   depends_on "cmake" => :build
@@ -23,6 +29,8 @@ class Widelands < Formula
   depends_on "sdl2_image"
   depends_on "sdl2_mixer"
   depends_on "sdl2_ttf"
+
+  uses_from_macos "curl"
 
   def install
     ENV.cxx11
@@ -42,6 +50,13 @@ class Widelands < Formula
   end
 
   test do
+    on_linux do
+      # Unable to start Widelands, because we were unable to add the home directory:
+      # RealFSImpl::make_directory: No such file or directory: /tmp/widelands-test/.local/share/widelands
+      mkdir_p ".local/share/widelands"
+      mkdir_p ".config/widelands"
+    end
+
     system bin/"widelands", "--version"
   end
 end

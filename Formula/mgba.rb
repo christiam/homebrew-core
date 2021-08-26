@@ -1,34 +1,33 @@
 class Mgba < Formula
   desc "Game Boy Advance emulator"
   homepage "https://mgba.io/"
-  url "https://github.com/mgba-emu/mgba/archive/0.7.3.tar.gz"
-  sha256 "6d5e8ab6f87d3d9fa85af2543db838568dbdfcecd6797f8153f1b3a10b4a8bdd"
-  revision 1
+  url "https://github.com/mgba-emu/mgba/archive/0.9.2.tar.gz"
+  sha256 "29ca22ebc56b26a4e7224efbb5fa12c9c006563d41990afb0874d048db76add4"
+  license "MPL-2.0"
   head "https://github.com/mgba-emu/mgba.git"
 
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
   bottle do
-    sha256 "309b853492c44b6200c7842e2df58f1f19683e5928634d33eab39bace340bab8" => :catalina
-    sha256 "b8ecfd80574ec3ead64f89726d8ba56d007e42b39ac024fbe143b9e8d6fd4203" => :mojave
-    sha256 "03a658f45acb46e17e3d7b093d765777e3ad3099cb9c73e3d8140f8bba085b3b" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "748990bd29b7c677472169b38a191bb6845e0380332f674b18acae32bc872a28"
+    sha256 cellar: :any, big_sur:       "bbd6ee9c4ef3698e28e58da996235b1c51b085f79f8f9042aff9d9b25950f6dc"
+    sha256 cellar: :any, catalina:      "c3719a69184da453cbab9569ca328bde05a46b157fc1b8f1668e7c481e1b161c"
+    sha256 cellar: :any, mojave:        "ae8283ff8e328160830007d48d4b1338ffa17e01dd41e3fc9438c447f18c473d"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
   depends_on "ffmpeg"
-  depends_on "imagemagick"
   depends_on "libepoxy"
   depends_on "libpng"
   depends_on "libzip"
-  depends_on "qt"
+  depends_on "qt@5"
   depends_on "sdl2"
 
   def install
-    # Fix "error: 'future<void>' is unavailable: introduced in macOS 10.8"
-    # Reported 11 Dec 2017 https://github.com/mgba-emu/mgba/issues/944
-    if MacOS.version <= :el_capitan
-      ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
-    end
-
     # Install .app bundle into prefix, not prefix/Applications
     inreplace "src/platform/qt/CMakeLists.txt", "Applications", "."
 

@@ -1,30 +1,33 @@
 class Dmd < Formula
   desc "D programming language compiler for macOS"
   homepage "https://dlang.org/"
+  license "BSL-1.0"
 
   stable do
-    url "https://github.com/dlang/dmd/archive/v2.090.0.tar.gz"
-    sha256 "ab591e45163b2653a3253d0fe3a58f3e40c9c43a1b466114d10c7e67ee569fdc"
+    url "https://github.com/dlang/dmd/archive/v2.097.2.tar.gz"
+    sha256 "10e8fc9b99864bf68f384ca85f0c527221478be08d331ac477a90a2d83b71f4f"
 
     resource "druntime" do
-      url "https://github.com/dlang/druntime/archive/v2.090.0.tar.gz"
-      sha256 "675303e9a773ebd6e91c3ae60108f140780c8ffd5abf4c3df52876b3bebcaa64"
+      url "https://github.com/dlang/druntime/archive/v2.097.2.tar.gz"
+      sha256 "ee09d6e37887bba856c767b9aa36f61b290f2cfe0c470eb4a9ccd7f2e24d4bcd"
     end
 
     resource "phobos" do
-      url "https://github.com/dlang/phobos/archive/v2.090.0.tar.gz"
-      sha256 "c7f709843b0ee50da53e138df0b61eae2e59550df0bf0adf0a8d0482f715cb4f"
+      url "https://github.com/dlang/phobos/archive/v2.097.2.tar.gz"
+      sha256 "3f407f94d5d50a43498acf7f463f56a96f66534901068f8d6be850a1bd12135c"
     end
 
     resource "tools" do
-      url "https://github.com/dlang/tools/archive/v2.090.0.tar.gz"
-      sha256 "84338fd55c82051ab103cbd165f277d2f855c6b5ce12305ab63968d9316ffb7c"
+      url "https://github.com/dlang/tools/archive/v2.097.2.tar.gz"
+      sha256 "b04c7ebd16fa1b48aea4667f3906fdb62b4ff94c661eb216ba477f3310faf882"
     end
   end
 
   bottle do
-    sha256 "12a52d3553afe09f3a12a2e40c4f27bb2910eacdf6003d9866527550187c9857" => :mojave
-    sha256 "6f9f0daa60dd0e44bd5d6cc47dbf4ea96487f5e51338177447691d151db7775c" => :high_sierra
+    sha256 big_sur:      "3d9352cd4ce2ed8874c9da854540a6c3928b3bc81b77788c7e8a09c8580bfbe0"
+    sha256 catalina:     "c9fb6b53f38ca780febac7c9d343928a9a2e88bec7aa5a6b7a05b70949915ca2"
+    sha256 mojave:       "9ccdddbfac184379c83150a87c2e230863c51866dd099ad9609c4eb22cf4f107"
+    sha256 x86_64_linux: "4fe16fa1889fe81062e0484eca751883c06ebea11c0df177f2b9b6fc8a3a24d8"
   end
 
   head do
@@ -42,6 +45,11 @@ class Dmd < Formula
       url "https://github.com/dlang/tools.git"
     end
   end
+
+  depends_on arch: :x86_64
+
+  uses_from_macos "unzip" => :build
+  uses_from_macos "xz" => :build
 
   def install
     # DMD defaults to v2.088.0 to bootstrap as of DMD 2.090.0
@@ -76,13 +84,18 @@ class Dmd < Formula
       system "make", "install", *make_args
     end
 
-    bin.install "generated/osx/release/64/dmd"
+    on_macos do
+      bin.install "generated/osx/release/64/dmd"
+    end
+    on_linux do
+      bin.install "generated/linux/release/64/dmd"
+    end
     pkgshare.install "samples"
     man.install Dir["docs/man/*"]
 
     (include/"dlang/dmd").install Dir["druntime/import/*"]
     cp_r ["phobos/std", "phobos/etc"], include/"dlang/dmd"
-    lib.install Dir["druntime/lib/*", "phobos/**/libphobos2.a"]
+    lib.install Dir["druntime/**/libdruntime.*", "phobos/**/libphobos2.*"]
 
     (buildpath/"dmd.conf").write <<~EOS
       [Environment]

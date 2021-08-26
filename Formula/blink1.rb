@@ -2,15 +2,16 @@ class Blink1 < Formula
   desc "Control blink(1) indicator light"
   homepage "https://blink1.thingm.com/"
   url "https://github.com/todbot/blink1-tool.git",
-      :tag      => "v2.0.5",
-      :revision => "ab2230d1164020f92cea4b7071e3b3ab4b320421"
-  head "https://github.com/todbot/blink1-tool.git"
+      tag:      "v2.2.0",
+      revision: "99d272ab1e398b744e2a17b4f4a20bfb1c1d606c"
+  license "CC-BY-SA-3.0"
+  head "https://github.com/todbot/blink1-tool.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "a7443c93dae3d13fef21b814396945d666ff3d32756106b2bc479dbf843e0e72" => :catalina
-    sha256 "a7443c93dae3d13fef21b814396945d666ff3d32756106b2bc479dbf843e0e72" => :mojave
-    sha256 "7066a0cdd84d176e63e466c742d06e358685e18c6262f55b41d70a4a9a196638" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "889f3e102d43f059049cec76aa5b80bb099add9927f1bd7d29f7decaa4009741"
+    sha256 cellar: :any, big_sur:       "14af896b923b60092a1bf250dc4e048e7b0fe2c6cd1d503f9b6b90a49e04acff"
+    sha256 cellar: :any, catalina:      "1f6cd75723e3fd2ae1620da782c237b4193bb89c6b594e0e5518cea7acebbef3"
+    sha256 cellar: :any, mojave:        "f4dba39b59bba805cef467d468f03e927583b97979786357d0ceb32683955491"
   end
 
   def install

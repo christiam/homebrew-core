@@ -1,13 +1,19 @@
 class Libngspice < Formula
   desc "Spice circuit simulator as shared library"
   homepage "https://ngspice.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/31/ngspice-31.tar.gz"
-  sha256 "845f3b0c962e47ded051dfbc134c3c1e4ac925c9f0ce1cb3df64eb9b9da5c282"
+  url "https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/35/ngspice-35.tar.gz"
+  sha256 "c1b7f5c276db579acb3f0a7afb64afdeb4362289a6cab502d4ca302d6e5279ec"
+
+  livecheck do
+    formula "ngspice"
+  end
 
   bottle do
-    sha256 "65990d8ecfe7fea7f7be728ac3783b2df7efd321e4b1fb4f50b9f5491fa47dc3" => :catalina
-    sha256 "b1693830a58945c577baa5bab6d97df12cc429409d938a5dae333c9a9059dcd8" => :mojave
-    sha256 "b44b359c37d2ce7c60bee9597e880cf5190e25c1145c4a92f93b9f7572ad9a1e" => :high_sierra
+    sha256 arm64_big_sur: "01054bb2006ea4677a5e1b95910e57b8ced84f9e778a89b01da3edb34d05725c"
+    sha256 big_sur:       "e131229e4c554e7831094bb19e1a4741385877eb0bf2cabfca9b6179476b9479"
+    sha256 catalina:      "17794a5f1e6e1b9a4bd8c45b4a45ab5cbf7755885eee0508948e1991e24cd2ec"
+    sha256 mojave:        "855fd851ca4492c2c8476763f8cc4ce6cc67681e37560d76786e685f61db18e2"
+    sha256 x86_64_linux:  "28f28030b9a69ccb91734230d407e3cdb04cf757c179e5cafbab6c7cf65af402"
   end
 
   head do

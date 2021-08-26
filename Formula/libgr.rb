@@ -1,28 +1,31 @@
 class Libgr < Formula
   desc "GR framework: a graphics library for visualisation applications"
   homepage "https://gr-framework.org/"
-  url "https://github.com/sciapp/gr/archive/v0.44.1.tar.gz"
-  sha256 "43979bee9f9bffd145e9e076d1ee24e6ecf3866eb6c0e34631da922bfb4dc0b5"
+  url "https://github.com/sciapp/gr/archive/v0.58.1.tar.gz"
+  sha256 "6bf66fb3f5cb55ccae2f9577b6c6f82443d9cb1e29e9992371a0beae15dfbc0d"
+  license "MIT"
 
   bottle do
-    sha256 "6e63cad1e7182a29eeab76efbc9775dea73faf2301a0c2a88e14d9e24ce1bb0d" => :catalina
-    sha256 "0b5a7338a81efe60dd9af00b5e912a60ed0e8dcc9476c84b35af1e789cd8d572" => :mojave
-    sha256 "d021bd902988273d097af9ffd949a50752611003a2a7591a3a482a96edaf651d" => :high_sierra
+    sha256 arm64_big_sur: "1bc2855ded2b014065c9a732fe5e8117f8033a3d6f9b4f40c9f590ec0cd006c3"
+    sha256 big_sur:       "f031867f149c470e837b314ca1fa78b009d19ff7394d5c06803796f9b2334e1f"
+    sha256 catalina:      "bc46224f56b921505eb3f68eaa02c640f9342508d4ca4cd991f93199f72ecf1c"
+    sha256 mojave:        "d60b8f7a34effe19db6f9f4757bd8263893648ece152bcf2023e8a03a82e995f"
   end
 
-  depends_on :xcode => :build
+  depends_on "cmake" => :build
   depends_on "cairo"
   depends_on "glfw"
   depends_on "libtiff"
-  depends_on "qt"
+  depends_on "qhull"
+  depends_on "qt@5"
   depends_on "zeromq"
 
   def install
-    # TODO: Remove this when released archive includes
-    # the fix of https://github.com/sciapp/gr/pull/101 .
-    ENV.deparallelize
-    system "make", "GRDIR=#{prefix}"
-    system "make", "GRDIR=#{prefix}", "install"
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args
+      system "make"
+      system "make", "install"
+    end
   end
 
   test do

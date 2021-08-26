@@ -1,29 +1,38 @@
 class Lasso < Formula
   desc "Library for Liberty Alliance and SAML protocols"
   homepage "https://lasso.entrouvert.org/"
-  url "https://dev.entrouvert.org/releases/lasso/lasso-2.6.0.tar.gz"
-  sha256 "146bff7a25166467d960003346cbc3291f3f29067e305cb82ebb12354c7d0acf"
-  revision 2
+  url "https://dev.entrouvert.org/releases/lasso/lasso-2.7.0.tar.gz"
+  sha256 "9282f2a546ee84b6d3a8236970fea3a47bea51cb247c31a05a374c22eb451d8d"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?lasso[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "2c88e8cd95ae369d367c06345174b9f9503ef9cf45907e9536a6930eeb7ccfbd" => :catalina
-    sha256 "2205d01fc955e79915ec59ba8acfa1221fcac6cd382529fcc08a2db6809e01e8" => :mojave
-    sha256 "e65e3b3b6ce40489b6674c51ccd6266d8a8167e6de99eb237e3a5a8a7473e33a" => :high_sierra
-    sha256 "de394e2052991b6fe749d8f8e00f7999c84241cfa93cb68791f2e2cb1a68381a" => :sierra
+    sha256 cellar: :any, arm64_big_sur: "9fa2831bd4c741367805ff5621489c3cc2ea3f19bafc5252817851cf9d5c0bde"
+    sha256 cellar: :any, big_sur:       "600c3e0dad28c4dadfd3c8aa880b3b652e6d7cf8d2bdeb22aa17f97eeb8bf43b"
+    sha256 cellar: :any, catalina:      "1b5faa0de1a45cb6d4965d17a1f8480716ab5e5af97ed6eeafa65d69a482e4e6"
+    sha256 cellar: :any, mojave:        "226e925072fb12e5009690fa8426c68dfad03fa9633464627a33b0991d29a5be"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "python@3.9" => :build
+  depends_on "six" => :build
   depends_on "glib"
   depends_on "libxmlsec1"
   depends_on "openssl@1.1"
 
   def install
+    xy = Language::Python.major_minor_version "python3"
+    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python#{xy}/site-packages"
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--disable-java",
                           "--disable-perl",
                           "--disable-php5",
+                          "--disable-php7",
                           "--disable-python",
                           "--prefix=#{prefix}",
                           "--with-pkg-config=#{ENV["PKG_CONFIG_PATH"]}"

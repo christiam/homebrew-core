@@ -1,25 +1,23 @@
 class Wartremover < Formula
   desc "Flexible Scala code linting tool"
   homepage "https://github.com/wartremover/wartremover"
-  url "https://github.com/wartremover/wartremover/archive/v2.4.3.tar.gz"
-  sha256 "b1680e3e7e82968182220e07558b56bb060ee0c43e08eb1c31a4fbd8b6ffefa6"
-  head "https://github.com/wartremover/wartremover.git"
+  url "https://github.com/wartremover/wartremover/archive/v2.4.16.tar.gz"
+  sha256 "41e906afe560650130cf14e307b65be0749a85d8435fd2e4d40403a0eb9b56cf"
+  license "Apache-2.0"
+  head "https://github.com/wartremover/wartremover.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "1072a005bc1a6592f8b78e7a96d7ea6406da61027a7fbd6d58e16f226d956879" => :catalina
-    sha256 "fa992ea76ca474f2a1897713eb0a1a850f2b28927aee118bac82fa69d99a10bb" => :mojave
-    sha256 "be2e41e936d7a5f78f1d242f958d4a6cd4c563a52fd599c8be0adb619eed4828" => :high_sierra
+    sha256 cellar: :any_skip_relocation, all: "32f5fefead8cc719ca13583ccf42faf976a33f3b45914767a014d667c167eaf2"
   end
 
   depends_on "sbt" => :build
-  depends_on :java => "1.8"
+  depends_on "openjdk@8"
 
   def install
-    system "./sbt", "-sbt-jar", Formula["sbt"].opt_libexec/"bin/sbt-launch.jar",
+    system "sbt", "-sbt-jar", Formula["sbt"].opt_libexec/"bin/sbt-launch.jar",
                     "core/assembly"
     libexec.install "wartremover-assembly.jar"
-    bin.write_jar_script libexec/"wartremover-assembly.jar", "wartremover", :java_version => "1.8"
+    bin.write_jar_script libexec/"wartremover-assembly.jar", "wartremover", java_version: "1.8"
   end
 
   test do

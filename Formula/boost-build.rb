@@ -1,23 +1,31 @@
 class BoostBuild < Formula
   desc "C++ build system"
   homepage "https://www.boost.org/build/"
-  url "https://github.com/boostorg/build/archive/boost-1.72.0.tar.gz"
-  sha256 "657d175aa59bcb307f75990fe2ae43793d30e40540c6d964b96ab5db3aa8629c"
+  url "https://github.com/boostorg/build/archive/boost-1.77.0.tar.gz"
+  sha256 "17ad1addbc08d1cc6ef52f7140097915bc4904c28c7d6d733c4a1a20d40bbc1c"
+  license "BSL-1.0"
   version_scheme 1
-  head "https://github.com/boostorg/build.git"
+  head "https://github.com/boostorg/build.git", branch: "develop"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "5b6a968f112d3cd808c4ed9186e4ee7f45fbf1adf19c188d65d782976c4f7bd0" => :catalina
-    sha256 "60041cac36e864d8c0296101f5ed5137f2c09413c0f054b87ed5c9ed1ad3e65e" => :mojave
-    sha256 "ea884fe791ba6b1b336d4bffdbba02414dbb746199c2748f0aefee845b7fbcd7" => :high_sierra
+  livecheck do
+    url :stable
+    regex(/^boost[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
-  conflicts_with "b2-tools", :because => "both install `b2` binaries"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "e73b2881104b13fef6c2c6a0fff30bd2bf41ff998936850a0d9cbc7cac5b86b1"
+    sha256 cellar: :any_skip_relocation, big_sur:       "651353d33f97fa5183c9acde956f7cfd67e36f288a4a35afaf907838e69dca36"
+    sha256 cellar: :any_skip_relocation, catalina:      "bc8909293558dd1d3c55a9d2d5cdfa155e63b3540da63a719a33fa872f371921"
+    sha256 cellar: :any_skip_relocation, mojave:        "26da04379b8dd9506778273f12277eb00b257653c11502d8ff50d3218587cc10"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "9119799f6a153292e094509fdce67cb553b83cb8f32db717324b7a529cf99939"
+  end
+
+  conflicts_with "b2-tools", because: "both install `b2` binaries"
 
   def install
     system "./bootstrap.sh"
     system "./b2", "--prefix=#{prefix}", "install"
+    pkgshare.install "boost-build.jam"
   end
 
   test do
@@ -28,7 +36,9 @@ class BoostBuild < Formula
     (testpath/"Jamroot.jam").write("exe hello : hello.cpp ;")
 
     system bin/"b2", "release"
-    out = Dir["bin/darwin-*/release/hello"]
+
+    compiler = File.basename(ENV.cc)
+    out = Dir["bin/#{compiler}*/release/hello"]
     assert out.length == 1
     assert_predicate testpath/out[0], :exist?
     assert_equal "Hello world", shell_output(out[0])

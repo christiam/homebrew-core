@@ -1,39 +1,44 @@
 class Go < Formula
   desc "Open source programming language to build simple/reliable/efficient software"
   homepage "https://golang.org"
+  url "https://golang.org/dl/go1.16.6.src.tar.gz"
+  mirror "https://fossies.org/linux/misc/go1.16.6.src.tar.gz"
+  sha256 "a3a5d4bc401b51db065e4f93b523347a4d343ae0c0b08a65c3423b05a138037d"
+  license "BSD-3-Clause"
+  head "https://go.googlesource.com/go.git"
 
-  stable do
-    url "https://dl.google.com/go/go1.13.5.src.tar.gz"
-    mirror "https://fossies.org/linux/misc/go1.13.5.src.tar.gz"
-    sha256 "27d356e2a0b30d9983b60a788cf225da5f914066b37a6b4f69d457ba55a626ff"
-
-    go_version = version.to_s.split(".")[0..1].join(".")
-    resource "gotools" do
-      url "https://go.googlesource.com/tools.git",
-          :branch => "release-branch.go#{go_version}"
-    end
+  livecheck do
+    url "https://golang.org/dl/"
+    regex(/href=.*?go[._-]?v?(\d+(?:\.\d+)+)[._-]src\.t/i)
   end
 
   bottle do
-    sha256 "8a73da047a947b897d409ce43c107d8f45dc14d64f74e1cc6389cf9fa9ff759d" => :catalina
-    sha256 "06bfe3093a424828aa5b5f5de20d530188ea65e9fd666f4f34eccdf167838430" => :mojave
-    sha256 "b75de256bf156c3a80b46950b60729d2fec17307903cb051e06dab6d2393f883" => :high_sierra
+    sha256 arm64_big_sur: "af21bd9994caca9ab8279caea54a3aa3385357638c5e57356a6d670e217d4a8a"
+    sha256 big_sur:       "91fded3b19303d0438ae8844c962c996d05c13d6e4d9407564142f9f2d3d8c78"
+    sha256 catalina:      "71e0325bfb484880a680f253ef83e5b4ba2d8321bfd7a7ae8043178b0e5484ec"
+    sha256 mojave:        "707d70b5d6315e4163096f9eae1a8c9509c967da68a4826233c9f1362be48dbf"
+    sha256 x86_64_linux:  "628b09d4f733727a633440710d89bbf359552adad4281643bf9a4d56311133ce"
   end
-
-  head do
-    url "https://go.googlesource.com/go.git"
-
-    resource "gotools" do
-      url "https://go.googlesource.com/tools.git"
-    end
-  end
-
-  depends_on :macos => :el_capitan
 
   # Don't update this unless this version cannot bootstrap the new version.
   resource "gobootstrap" do
-    url "https://storage.googleapis.com/golang/go1.7.darwin-amd64.tar.gz"
-    sha256 "51d905e0b43b3d0ed41aaf23e19001ab4bc3f96c3ca134b48f7892485fc52961"
+    on_macos do
+      if Hardware::CPU.arm?
+        url "https://storage.googleapis.com/golang/go1.16.darwin-arm64.tar.gz"
+        version "1.16"
+        sha256 "4dac57c00168d30bbd02d95131d5de9ca88e04f2c5a29a404576f30ae9b54810"
+      else
+        url "https://storage.googleapis.com/golang/go1.16.darwin-amd64.tar.gz"
+        version "1.16"
+        sha256 "6000a9522975d116bf76044967d7e69e04e982e9625330d9a539a8b45395f9a8"
+      end
+    end
+
+    on_linux do
+      url "https://storage.googleapis.com/golang/go1.16.linux-amd64.tar.gz"
+      version "1.16"
+      sha256 "013a489ebb3e24ef3d915abe5b94c3286c070dfe0818d5bca8108f1d6e8440d2"
+    end
   end
 
   def install
@@ -42,7 +47,6 @@ class Go < Formula
 
     cd "src" do
       ENV["GOROOT_FINAL"] = libexec
-      ENV["GOOS"]         = "darwin"
       system "./make.bash", "--no-clean"
     end
 
@@ -53,15 +57,11 @@ class Go < Formula
 
     system bin/"go", "install", "-race", "std"
 
-    # Build and install godoc
-    ENV.prepend_path "PATH", bin
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/golang.org/x/tools").install resource("gotools")
-    cd "src/golang.org/x/tools/cmd/godoc/" do
-      system "go", "build"
-      (libexec/"bin").install "godoc"
-    end
-    bin.install_symlink libexec/"bin/godoc"
+    # Remove useless files.
+    # Breaks patchelf because folder contains weird debug/test files
+    (libexec/"src/debug/elf/testdata").rmtree
+    # Binaries built for an incompatible architecture
+    (libexec/"src/runtime/pprof/testdata").rmtree
   end
 
   test do
@@ -78,10 +78,6 @@ class Go < Formula
     # This is a a bare minimum of go working as it uses fmt, build, and run.
     system bin/"go", "fmt", "hello.go"
     assert_equal "Hello World\n", shell_output("#{bin}/go run hello.go")
-
-    # godoc was installed
-    assert_predicate libexec/"bin/godoc", :exist?
-    assert_predicate libexec/"bin/godoc", :executable?
 
     ENV["GOOS"] = "freebsd"
     ENV["GOARCH"] = "amd64"

@@ -1,26 +1,28 @@
 class GitCola < Formula
   desc "Highly caffeinated git GUI"
   homepage "https://git-cola.github.io/"
-  url "https://github.com/git-cola/git-cola/archive/v3.6.tar.gz"
-  sha256 "63369f519f81988c2d167ba2c59ad53644d3fac2b7be1e12d3f1df9b8fd91839"
-  revision 1
+  url "https://github.com/git-cola/git-cola/archive/v3.10.1.tar.gz"
+  sha256 "1d7a9be54e66fcaa49585cda3ec89b6b2448f6e38c6f41047e55ecaff2d809d3"
+  license "GPL-2.0-or-later"
   head "https://github.com/git-cola/git-cola.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "9298661d78219de2ad1a621a76d4c3785d10fb7abd4606d38e195573cd01c541" => :catalina
-    sha256 "9298661d78219de2ad1a621a76d4c3785d10fb7abd4606d38e195573cd01c541" => :mojave
-    sha256 "9298661d78219de2ad1a621a76d4c3785d10fb7abd4606d38e195573cd01c541" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "59bb04e27ae81985b641c0d6bf886d538ec0d4eca3e38681cba0479e76a2064a"
+    sha256 cellar: :any_skip_relocation, big_sur:       "a7c75d4c5c2b43d3f2b2fb57b9f26e0d95933e2b94dc2b6cf7e24ea8b91a5da6"
+    sha256 cellar: :any_skip_relocation, catalina:      "a7c75d4c5c2b43d3f2b2fb57b9f26e0d95933e2b94dc2b6cf7e24ea8b91a5da6"
+    sha256 cellar: :any_skip_relocation, mojave:        "a7c75d4c5c2b43d3f2b2fb57b9f26e0d95933e2b94dc2b6cf7e24ea8b91a5da6"
   end
 
   depends_on "sphinx-doc" => :build
-  depends_on "pyqt"
-  depends_on "python"
+  depends_on "pyqt@5"
+  depends_on "python@3.9"
+
+  uses_from_macos "rsync"
 
   def install
     ENV.delete("PYTHONPATH")
-    system "make", "PYTHON=python3", "prefix=#{prefix}", "install"
-    system "make", "install-doc", "PYTHON=python3", "prefix=#{prefix}",
+    system "make", "PYTHON=#{Formula["python@3.9"].opt_bin}/python3", "prefix=#{prefix}", "install"
+    system "make", "install-doc", "PYTHON=#{Formula["python@3.9"].opt_bin}/python3}", "prefix=#{prefix}",
            "SPHINXBUILD=#{Formula["sphinx-doc"].opt_bin}/sphinx-build"
   end
 

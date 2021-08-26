@@ -1,33 +1,33 @@
 class Libphonenumber < Formula
   desc "C++ Phone Number library by Google"
   homepage "https://github.com/google/libphonenumber"
-  url "https://github.com/google/libphonenumber/archive/v8.11.1.tar.gz"
-  sha256 "43d5b8bff0ae603a63fb7deb5cbb541556e50ac58f6447b55963923e20de6ff5"
+  url "https://github.com/google/libphonenumber/archive/v8.12.30.tar.gz"
+  sha256 "7886fa3ed05d6424bc3b8cd104ffc9ab942d7c3721369c5c8e9d730ddeee5ae2"
+  license "Apache-2.0"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "a92293f5052f4b02937cad2fbeececa63143b3c194d7cd41df8540c91a2fc67e" => :catalina
-    sha256 "a844543f549f4afab48a0ec064d47948839e43bdcd9b72cc3bf763ef758fb5ec" => :mojave
-    sha256 "6d175a0d4ff48d0fcbc5b1d1f51de7f41590bfa66e983189669243496fb16b5e" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "b73d8793448bf17f46e3a8a5b5bbecb9ace9490a863afbb53d3be422fd1aa9ab"
+    sha256 cellar: :any,                 big_sur:       "48d0fe6f99c03f19706b81fbf684a5228ba8c3dad00b8d7ceb43e9fa7d5bcb61"
+    sha256 cellar: :any,                 catalina:      "8790b14e280251d65492cd659f0ab09587ba1a1bb5497b6ab311e8453e5b2ad1"
+    sha256 cellar: :any,                 mojave:        "ff5214d356b5750557a1f54d740321b5900c1bd87c0a3c18c3aa94a43ac0daa8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "f690cd0b372df2d108b154711e120496ce0750ac64e3d540ad20afb99e9e3e68"
   end
 
   depends_on "cmake" => :build
+  depends_on "googletest" => :build
   depends_on "boost"
   depends_on "icu4c"
-  depends_on :java => "1.7+"
   depends_on "protobuf"
   depends_on "re2"
 
-  resource "gtest" do
-    url "https://github.com/google/googletest/archive/release-1.8.1.tar.gz"
-    sha256 "9bf1fe5182a604b4135edc1a425ae356c9ad15e9b23f9f12a02e80184c3a249c"
-  end
-
   def install
     ENV.cxx11
-    (buildpath/"gtest").install resource("gtest")
-    system "cmake", "cpp", "-DGTEST_SOURCE_DIR=gtest/googletest",
-                           "-DGTEST_INCLUDE_DIR=gtest/googletest/include",
+    system "cmake", "cpp", "-DGTEST_INCLUDE_DIR=#{Formula["googletest"].include}",
                            *std_cmake_args
     system "make", "install"
   end

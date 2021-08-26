@@ -1,23 +1,28 @@
 class GlibNetworking < Formula
   desc "Network related modules for glib"
-  homepage "https://launchpad.net/glib-networking"
-  url "https://download.gnome.org/sources/glib-networking/2.62/glib-networking-2.62.3.tar.xz"
-  sha256 "8ca1f86f23a76b5c7640624f7d5490705c78e81375e1741c9a1c41ce7f8f7ff7"
+  homepage "https://gitlab.gnome.org/GNOME/glib-networking"
+  url "https://download.gnome.org/sources/glib-networking/2.68/glib-networking-2.68.2.tar.xz"
+  sha256 "535ebc054ef697db56a4fffed91bc0e11c8ee1c9acb48aad28c8e1d5c3d5994f"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any
-    sha256 "a8c708d4907f009fef63f031649d18881a2702691a731f205fea8713948bbd5d" => :catalina
-    sha256 "536e1431a2d5fa81f6e6bb4747923b07eac714a72e8c59b7025349ba7d14d6fd" => :mojave
-    sha256 "8a37f00ee13a41a78e6fc2a79287d47278472d2b015eeeb4eaaf7254c98df4ae" => :high_sierra
+    sha256               arm64_big_sur: "f48230a752b04fbad30792f44158fa8345b0297fec26a3cfdfd9a18299855bfe"
+    sha256 cellar: :any, big_sur:       "2bdd255243cfbfbfc45b9bb5f1bd28723cfbdee85f121f3e35b962f3b9204cab"
+    sha256 cellar: :any, catalina:      "b646313b3dc37fae0d3cdce33078558e0097d3a750553026b3ef4eab10ad22dd"
+    sha256 cellar: :any, mojave:        "181ec40dfa3ed3b013daa871e3cca021b0d4e839dfa264371470aa7074f0a2c1"
+    sha256               x86_64_linux:  "8f5660cf6e5f16ab0cc79821b7f0cc0891ee6f61ae14cdef7cd81dfd08b3df66"
   end
 
   depends_on "meson" => :build
   depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "python" => :build
   depends_on "glib"
   depends_on "gnutls"
   depends_on "gsettings-desktop-schemas"
+
+  on_linux do
+    depends_on "libidn"
+  end
 
   link_overwrite "lib/gio/modules"
 
@@ -26,7 +31,7 @@ class GlibNetworking < Formula
     ENV["DESTDIR"] = "/"
 
     mkdir "build" do
-      system "meson", "--prefix=#{prefix}",
+      system "meson", *std_meson_args,
                       "-Dlibproxy=disabled",
                       "-Dopenssl=disabled",
                       "-Dgnome_proxy=disabled",

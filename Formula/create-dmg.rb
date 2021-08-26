@@ -1,25 +1,23 @@
 class CreateDmg < Formula
   desc "Shell script to build fancy DMGs"
-  homepage "https://github.com/andreyvit/create-dmg"
-  url "https://github.com/andreyvit/create-dmg/archive/v1.0.0.5.tar.gz"
-  sha256 "de76c8a7a1f4705720d61d39de7c87b7bc2acc7c35f6ec8d6d2dbdafcedc21b6"
+  homepage "https://github.com/create-dmg/create-dmg"
+  url "https://github.com/create-dmg/create-dmg/archive/v1.0.9.tar.gz"
+  sha256 "f0284d0a386353cd127df2f15af526c821995c664ba4063863ee500a374aada4"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f79816fe786969d0c2bbf6c025d1616b04add290a20def2492f73295b36bc76c" => :mojave
-    sha256 "d99f697bf1d22dba54a87890b30f383bf4aec7ca5b54f180646041f9d046c243" => :high_sierra
-    sha256 "d99f697bf1d22dba54a87890b30f383bf4aec7ca5b54f180646041f9d046c243" => :sierra
+    sha256 cellar: :any_skip_relocation, all: "fbbb2e726579852cfa16abe27bc34bf78a2df0c991a9d9d6994c2ffbd5c2773d"
   end
 
   def install
-    system "support/brew-me.sh"
-    bin.install "create-dmg"
+    system "make", "install", "prefix=#{prefix}"
   end
 
   test do
     File.write(testpath/"Brew-Eula.txt", "Eula")
     (testpath/"Test-Source").mkpath
     (testpath/"Test-Source/Brew.app").mkpath
-    system "#{bin}/create-dmg", "--sandbox-safe", "--eula", testpath/"Brew-Eula.txt", testpath/"Brew-Test.dmg", testpath/"Test-Source"
+    system "#{bin}/create-dmg", "--sandbox-safe", "--eula",
+           testpath/"Brew-Eula.txt", testpath/"Brew-Test.dmg", testpath/"Test-Source"
   end
 end

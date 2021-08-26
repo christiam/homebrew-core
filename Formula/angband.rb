@@ -1,23 +1,21 @@
 class Angband < Formula
   desc "Dungeon exploration game"
-  homepage "https://rephial.org/"
-  url "https://rephial.org/downloads/4.2/angband-4.2.0.tar.gz"
-  sha256 "d3e1495c7cc2a4ee66de7b4e612d3b133048072e37504bd2e58a2351ab0fb56d"
-  head "https://github.com/angband/angband.git"
+  homepage "https://angband.github.io/angband/"
+  url "https://github.com/angband/angband/releases/download/4.2.3/Angband-4.2.3.tar.gz"
+  sha256 "833c4f8cff2aee61ad015f9346fceaa4a8c739fe2dbe5bd1acd580c91818e6bb"
+  license "GPL-2.0-only"
+  head "https://github.com/angband/angband.git", branch: "master"
 
   bottle do
-    sha256 "3d68682f9905d6f0d829ccebc59f7215c9bdef7e05cde4d88d825d660f22233d" => :catalina
-    sha256 "dc6f1a83a2810d52da345f6612064a2b851071a92a0eec5338ee6f1a933b3186" => :mojave
-    sha256 "611854a1b7d74e879f596ea2a03522eb5cba323cc7db047a918d2affb60c79fd" => :high_sierra
-    sha256 "6330d08684c373c901f25845b838a3ac6c8c6c5ebeae80c7d3f6a63c198af181" => :sierra
+    sha256 arm64_big_sur: "ab6002b750047f4c544b8427a2f021395b75ab7f9f93c26fc0f3625b758f5842"
+    sha256 big_sur:       "3f6aee791649219ab05f70d1c9170e09137d23ee31fcfdd3862c242dd2165771"
+    sha256 catalina:      "c983b2033647d198120ae6295302f812fc7f35fc5d43e4bb430ff63f1fd89c31"
+    sha256 mojave:        "6eb8682054143520fbf931cac520aa8b1c3e8776db5d8e13c374698563fba23e"
+    sha256 x86_64_linux:  "c846da0bf2b065f0867cf114896938c321c5a86de031dfd0ec7bd94913425ac0"
   end
-
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
 
   def install
     ENV["NCURSES_CONFIG"] = "#{MacOS.sdk_path}/usr/bin/ncurses5.4-config"
-    system "./autogen.sh"
     system "./configure", "--prefix=#{prefix}",
                           "--bindir=#{bin}",
                           "--libdir=#{libexec}",

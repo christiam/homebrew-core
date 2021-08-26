@@ -1,18 +1,23 @@
 class GitArchiveAll < Formula
+  include Language::Python::Shebang
+
   desc "Archive a project and its submodules"
   homepage "https://github.com/Kentzo/git-archive-all"
-  url "https://github.com/Kentzo/git-archive-all/archive/1.20.0.tar.gz"
-  sha256 "816cbd5fee43779be3e3527ddad011154bfdc496f93615c0d63340157adf5665"
+  url "https://github.com/Kentzo/git-archive-all/archive/1.23.0.tar.gz"
+  sha256 "25f36948b704e57c47c98a33280df271de7fbfb74753b4984612eabb08fb2ab1"
+  license "MIT"
+  revision 1
   head "https://github.com/Kentzo/git-archive-all.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f19b26ad5f84a0049ff16c4b0a2e5080eb06ba3d5925c4622b09b2dec80d3be9" => :catalina
-    sha256 "f19b26ad5f84a0049ff16c4b0a2e5080eb06ba3d5925c4622b09b2dec80d3be9" => :mojave
-    sha256 "f19b26ad5f84a0049ff16c4b0a2e5080eb06ba3d5925c4622b09b2dec80d3be9" => :high_sierra
+    sha256 cellar: :any_skip_relocation, all: "2c5a291b77ebe4a1f5fc2f3a0a2de81bf6b25478940494f8e314f8f267debd04"
   end
 
+  depends_on "python@3.9"
+
   def install
+    rewrite_shebang detected_python_shebang, "*.py"
+
     system "make", "prefix=#{prefix}", "install"
   end
 

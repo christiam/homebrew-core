@@ -1,14 +1,22 @@
 class Xmrig < Formula
   desc "Monero (XMR) CPU miner"
   homepage "https://github.com/xmrig/xmrig"
-  url "https://github.com/xmrig/xmrig/archive/v5.5.0.tar.gz"
-  sha256 "60c8cb1f5f638bc2c7dae84c4fc8f097c3ac6530ed771d4c4ef7e281326da9fd"
-  head "https://github.com/xmrig/xmrig.git"
+  url "https://github.com/xmrig/xmrig/archive/v6.14.1.tar.gz"
+  sha256 "5342632664a01efc7d512ce404f580d9ee380899afb144b4afc05c43e76cf446"
+  license "GPL-3.0-or-later"
+  head "https://github.com/xmrig/xmrig.git", branch: "master"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "9b86b75365fbdf62b9b3a8ee3dac3d0e1cd7097193e1a0a3ce14925489c0dcf9" => :catalina
-    sha256 "f5de562e17fb1102bbbda81271839380aebb6e3110f3dd6a4b5ce02b5a792ccc" => :mojave
-    sha256 "baa2a5edb09baa856622378b77b509f52adc426288d36406b2734a87ad010354" => :high_sierra
+    sha256                               arm64_big_sur: "f9f22c6ec51688ab08c4d5781009d014df2abb3213593c8c5d346374e06fe9cb"
+    sha256                               big_sur:       "64a8acf08048c855bfdf22dfa51512617280407617f28e8941be5712324a76c2"
+    sha256                               catalina:      "59ad44dbbf217c0b4430fb803c7226dcb2f53b14295dcf2e62de25728b75c4dc"
+    sha256                               mojave:        "fe36bc7a8b724b2c94b565093d1560095846cff43d429b41a1bdd147df7e72d0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "9fbd8ed53e878e2a573beda40672d4ccd9675740551b8c508a87fe979492eb52"
   end
 
   depends_on "cmake" => :build
@@ -34,12 +42,12 @@ class Xmrig < Formula
       read, write = IO.pipe
       pid = fork do
         exec "#{bin}/xmrig", "--no-color", "--max-cpu-usage=1", "--print-time=1",
-             "--threads=1", "--retries=1", "--url=#{test_server}", :out => write
+             "--threads=1", "--retries=1", "--url=#{test_server}", out: write
       end
       start_time=Time.now
       loop do
         assert (Time.now - start_time <= timeout), "No server connect after timeout"
-        break if read.gets.include? "\] \[#{test_server}\] DNS error: \"unknown node or service\""
+        break if read.gets.include? "#{test_server} DNS error: \"unknown node or service\""
       end
     ensure
       Process.kill("SIGINT", pid)

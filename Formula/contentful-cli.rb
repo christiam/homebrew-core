@@ -3,15 +3,17 @@ require "language/node"
 class ContentfulCli < Formula
   desc "Contentful command-line tools"
   homepage "https://github.com/contentful/contentful-cli"
-  url "https://registry.npmjs.org/contentful-cli/-/contentful-cli-1.2.3.tgz"
-  sha256 "123ca9051c27e68a4fc0c291c5c675e681564ef2d4f3a75b100574c4b76bac80"
-  head "https://github.com/contentful/contentful-cli.git"
+  url "https://registry.npmjs.org/contentful-cli/-/contentful-cli-1.9.0.tgz"
+  sha256 "f188976031405b66696891c07fe4dea6a1ced2fdd6a38a3932e1571aeba96305"
+  license "MIT"
+  head "https://github.com/contentful/contentful-cli.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "6be2a293bddf005f8e6f2efe1210efde3f7929c4245199f564136bcb2b1c191e" => :catalina
-    sha256 "c0be6526734d59f8566f9a3f53350c24e48205b00b4cf61126995b7f765ed402" => :mojave
-    sha256 "3fcca4afc7e192981ad45d5ebfc3b8cde0ae67e72ae8edaff459f80b33e009b0" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "b8e8cab4fb826fe58732f21082c673ad9b5d3894e9e1f51a1a9a97a24f40a12e"
+    sha256 cellar: :any_skip_relocation, big_sur:       "38461ee0f77a4dd7374cd6e7ddece82dd5b5d7a7774b0d04bef9e51422141424"
+    sha256 cellar: :any_skip_relocation, catalina:      "38461ee0f77a4dd7374cd6e7ddece82dd5b5d7a7774b0d04bef9e51422141424"
+    sha256 cellar: :any_skip_relocation, mojave:        "38461ee0f77a4dd7374cd6e7ddece82dd5b5d7a7774b0d04bef9e51422141424"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "6632723c4e0898bbb6e3987409166840c16634367f7e171131b4e76ce0e62fdd"
   end
 
   depends_on "node"
@@ -25,6 +27,6 @@ class ContentfulCli < Formula
     output = shell_output("#{bin}/contentful space list 2>&1", 1)
     assert_match "🚨  Error: You have to be logged in to do this.", output
     assert_match "You can log in via contentful login", output
-    assert_match "Or provide a managementToken via --management-Token argument", output
+    assert_match "Or provide a management token via --management-token argument", output
   end
 end

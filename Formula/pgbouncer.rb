@@ -1,14 +1,19 @@
 class Pgbouncer < Formula
   desc "Lightweight connection pooler for PostgreSQL"
   homepage "https://www.pgbouncer.org/"
-  url "https://www.pgbouncer.org/downloads/files/1.12.0/pgbouncer-1.12.0.tar.gz"
-  sha256 "1b3c6564376cafa0da98df3520f0e932bb2aebaf9a95ca5b9fa461e9eb7b273e"
+  url "https://www.pgbouncer.org/downloads/files/1.16.0/pgbouncer-1.16.0.tar.gz"
+  sha256 "a4a391618bb83caaee2a8cd9653974f4c1b98b95987d5cabbbeb801da6342652"
+
+  livecheck do
+    url "https://github.com/pgbouncer/pgbouncer"
+  end
 
   bottle do
-    cellar :any
-    sha256 "e01f2d531e6ef62c29614c8eb435d311733e44206d7da4e78e6853ddb339bb07" => :catalina
-    sha256 "1c9de5a71cf7c54d92802adefe2ce68ef0db48bc6619b06e2cf2741164330927" => :mojave
-    sha256 "387cf0cf1819be2442ed9b3acd89815b4c5b3bc6a3386641568a70eaa62c6100" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "296a29f3cbfc6913fc9fdd0ebfd3a0f5475b74a781192b869fcb6757e919c879"
+    sha256 cellar: :any,                 big_sur:       "7d61dac174635767840b8dde46b2d9b4b25f6a36fc5ac950beb0868366fa87b8"
+    sha256 cellar: :any,                 catalina:      "e9bcdece7ed67566382ed196d34f6550fd093519e0283cb5e6170bd66645355f"
+    sha256 cellar: :any,                 mojave:        "d6e080c159196a61edd69c73ea234ce34bc91baeaf25e814633d2b35cabfb496"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "26f5a2974400ec50e0727ce1b3054ceacd83e2e10e6b65e0e92296f412c65bfb"
   end
 
   depends_on "pkg-config" => :build
@@ -21,48 +26,33 @@ class Pgbouncer < Formula
     system "make", "install"
     bin.install "etc/mkauth.py"
     inreplace "etc/pgbouncer.ini" do |s|
-      s.gsub! /logfile = .*/, "logfile = #{var}/log/pgbouncer.log"
-      s.gsub! /pidfile = .*/, "pidfile = #{var}/run/pgbouncer.pid"
-      s.gsub! /auth_file = .*/, "auth_file = #{etc}/userlist.txt"
+      s.gsub!(/logfile = .*/, "logfile = #{var}/log/pgbouncer.log")
+      s.gsub!(/pidfile = .*/, "pidfile = #{var}/run/pgbouncer.pid")
+      s.gsub!(/auth_file = .*/, "auth_file = #{etc}/userlist.txt")
     end
     etc.install %w[etc/pgbouncer.ini etc/userlist.txt]
   end
 
-  def caveats; <<~EOS
-    The config file: #{etc}/pgbouncer.ini is in the "ini" format and you
-    will need to edit it for your particular setup. See:
-    https://pgbouncer.github.io/config.html
-
-    The auth_file option should point to the #{etc}/userlist.txt file which
-    can be populated by the #{bin}/mkauth.py script.
-  EOS
+  def post_install
+    (var/"log").mkpath
+    (var/"run").mkpath
   end
 
-  plist_options :manual => "pgbouncer -q #{HOMEBREW_PREFIX}/etc/pgbouncer.ini"
-
-  def plist
+  def caveats
     <<~EOS
-      <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-      <plist version="1.0">
-      <dict>
-        <key>KeepAlive</key>
-        <true/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/pgbouncer</string>
-          <string>-q</string>
-          <string>#{etc}/pgbouncer.ini</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-      </dict>
-      </plist>
+      The config file: #{etc}/pgbouncer.ini is in the "ini" format and you
+      will need to edit it for your particular setup. See:
+      https://pgbouncer.github.io/config.html
+
+      The auth_file option should point to the #{etc}/userlist.txt file which
+      can be populated by the #{bin}/mkauth.py script.
     EOS
+  end
+
+  service do
+    run [opt_bin/"pgbouncer", "-q", etc/"pgbouncer.ini"]
+    keep_alive true
+    working_dir HOMEBREW_PREFIX
   end
 
   test do

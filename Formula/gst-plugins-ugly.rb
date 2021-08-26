@@ -1,23 +1,26 @@
 class GstPluginsUgly < Formula
   desc "Library for constructing graphs of media-handling components"
   homepage "https://gstreamer.freedesktop.org/"
-  url "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.16.2.tar.xz"
-  sha256 "5500415b865e8b62775d4742cbb9f37146a50caecfc0e7a6fc0160d3c560fbca"
+  url "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.18.4.tar.xz"
+  sha256 "218df0ce0d31e8ca9cdeb01a3b0c573172cc9c21bb3d41811c7820145623d13c"
+  license "LGPL-2.0-or-later"
+  revision 1
+  head "https://gitlab.freedesktop.org/gstreamer/gst-plugins-ugly.git"
+
+  livecheck do
+    url "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/"
+    regex(/href=.*?gst-plugins-ugly[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
+  end
 
   bottle do
-    sha256 "768c76d71554bdd72c865ac0111dd19d0afe62734fa03dcd21a2494dd0010aea" => :catalina
-    sha256 "d6f9b04a9f189117d615249d537ec58d81ba6d9c4d8f3192bdd15a18fcb49c02" => :mojave
-    sha256 "46b6251ffed2f986fac043138d8f721f999275318916e1397f5068688c1c3341" => :high_sierra
+    sha256 arm64_big_sur: "93577cdbd18ee2cbdf026104ad07e9c9ae510c28a487a5fe4fbb18743ff596e8"
+    sha256 big_sur:       "0a6d18fa102bcea7e8e096a8b114fa415a32c2c6cd477fdaa68255ffb119ac28"
+    sha256 catalina:      "3bf8b148e0901057104047b7392c501986096858e287cc4f11299933f1708931"
+    sha256 mojave:        "beb6b703ebad1a546c0ca4a9e9253e20bdb78c3aeba4231fdd1a645ab8fd11dc"
   end
 
-  head do
-    url "https://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly.git"
-
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-  end
-
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "flac"
   depends_on "gettext"
@@ -31,28 +34,23 @@ class GstPluginsUgly < Formula
   depends_on "x264"
 
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --mandir=#{man}
-      --disable-debug
-      --disable-dependency-tracking
-      --disable-amrnb
-      --disable-amrwb
+    args = std_meson_args + %w[
+      -Damrnb=disabled
+      -Damwrbdec=disabled
     ]
 
-    if build.head?
-      ENV["NOCONFIGURE"] = "yes"
-      system "./autogen.sh"
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
-
-    system "./configure", *args
-    system "make"
-    system "make", "install"
   end
 
   test do
     gst = Formula["gstreamer"].opt_bin/"gst-inspect-1.0"
     output = shell_output("#{gst} --plugin dvdsub")
+    assert_match version.to_s, output
+    output = shell_output("#{gst} --plugin x264")
     assert_match version.to_s, output
   end
 end

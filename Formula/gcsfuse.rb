@@ -1,19 +1,24 @@
 class Gcsfuse < Formula
   desc "User-space file system for interacting with Google Cloud"
   homepage "https://github.com/googlecloudplatform/gcsfuse"
-  url "https://github.com/GoogleCloudPlatform/gcsfuse/archive/v0.29.0.tar.gz"
-  sha256 "4f994d694a12691b7ea5bd293c50ba4a37bc329cf531780015daf0a5fd265b30"
+  url "https://github.com/GoogleCloudPlatform/gcsfuse/archive/v0.35.1.tar.gz"
+  sha256 "effcbffa238cf0a97488b4a3b836c0996b1db17a18ad91bf76b5c195a4f5bfed"
+  license "Apache-2.0"
   head "https://github.com/GoogleCloudPlatform/gcsfuse.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "0f77f535e3f254ee258ff0fc2789c3e3cbdcd5ae82752f20ba4b9d81f08b9784" => :catalina
-    sha256 "34f2669361a227f30c00f70aa0e8787a049c845ef4ad010a5adcd98fecf3db34" => :mojave
-    sha256 "6edf61db4afc7f42c57b2dd4867e8ca80224b5c924c5d1e8d5bfea9b24abf4a3" => :high_sierra
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "a6e7417b5a11ea8587f09dc31fb9eebb9b5e770ec07aec630bac1c9184d19feb"
   end
 
   depends_on "go" => :build
-  depends_on :osxfuse
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse"
+  end
 
   def install
     # Build the build_gcsfuse tool. Ensure that it doesn't pick up any
@@ -22,17 +27,28 @@ class Gcsfuse < Formula
     system "go", "build", "./tools/build_gcsfuse"
 
     # Use that tool to build gcsfuse itself.
-    if build.head?
-      gcsfuse_version = `git rev-parse --short HEAD`.strip
-    else
-      gcsfuse_version = version
-    end
-
+    gcsfuse_version = build.head? ? Utils.git_short_head : version
     system "./build_gcsfuse", buildpath, prefix, gcsfuse_version
+  end
+
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
+
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
   end
 
   test do
     system "#{bin}/gcsfuse", "--help"
-    system "#{sbin}/mount_gcsfuse", "--help"
+    separator = "_"
+    on_linux do
+      separator = "."
+    end
+    system "#{sbin}/mount#{separator}gcsfuse", "--help"
   end
 end

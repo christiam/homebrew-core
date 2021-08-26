@@ -1,13 +1,22 @@
 class OpenMpi < Formula
   desc "High performance message passing library"
   homepage "https://www.open-mpi.org/"
-  url "https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.bz2"
-  sha256 "900bf751be72eccf06de9d186f7b1c4b5c2fa9fa66458e53b77778dffdfe4057"
+  url "https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.1.tar.bz2"
+  sha256 "e24f7a778bd11a71ad0c14587a7f5b00e68a71aa5623e2157bafee3d44c07cda"
+  license "BSD-3-Clause"
+  revision 2
+
+  livecheck do
+    url :homepage
+    regex(/MPI v?(\d+(?:\.\d+)+) release/i)
+  end
 
   bottle do
-    sha256 "ac579ec2df32c7cc06b8eed8763acc19ca60c2efcda202a9ed064f160a82d279" => :catalina
-    sha256 "414093834dd4f424b64131c8af489a4ce2154c104725fff666be34072f5622f0" => :mojave
-    sha256 "096f28e4f8b2bb81277ce390e6c4b207c3c97d63adf12b00d446d91eae096424" => :high_sierra
+    sha256 arm64_big_sur: "c24af00250fad2b097822d0d6e51f1027915e375dcbc0590b385b30ef8af6453"
+    sha256 big_sur:       "da310195e62c1a27aea7365b325cb15dd48f99dd673fd1f685f8b5247cfbb48d"
+    sha256 catalina:      "27f25156376078df9cb6e41a57c370cb030f16092ee7dfe85d7a8000f252240e"
+    sha256 mojave:        "4d57102ec2e06043bc97d34130ae5cd9115a6a1718331476f5fbd71d8bef149e"
+    sha256 x86_64_linux:  "0c6558437eedbf31810f41163ddff64c610ec5d5065bb4080e2559961ab3668d"
   end
 
   head do
@@ -17,15 +26,38 @@ class OpenMpi < Formula
     depends_on "libtool" => :build
   end
 
-  depends_on "gcc"
+  depends_on "gcc" # for gfortran
   depends_on "hwloc"
   depends_on "libevent"
 
-  conflicts_with "mpich", :because => "both install MPI compiler wrappers"
+  conflicts_with "mpich", because: "both install MPI compiler wrappers"
 
   def install
-    # otherwise libmpi_usempi_ignore_tkr gets built as a static library
-    ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+    if MacOS.version == :big_sur
+      # Fix for current GCC on Big Sur, which does not like 11 as version value
+      # (reported at https://github.com/iains/gcc-darwin-arm64/issues/31#issuecomment-750343944)
+      ENV["MACOSX_DEPLOYMENT_TARGET"] = "11.0"
+    else
+      # Otherwise libmpi_usempi_ignore_tkr gets built as a static library
+      ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+    end
+
+    # Avoid references to the Homebrew shims directory
+    %w[
+      ompi/tools/ompi_info/param.c
+      orte/tools/orte-info/param.c
+      oshmem/tools/oshmem_info/param.c
+      opal/mca/pmix/pmix3x/pmix/src/tools/pmix_info/support.c
+    ].each do |fname|
+      inreplace fname, /(OPAL|PMIX)_CC_ABSOLUTE/, "\"#{ENV.cc}\""
+    end
+
+    %w[
+      ompi/tools/ompi_info/param.c
+      oshmem/tools/oshmem_info/param.c
+    ].each do |fname|
+      inreplace fname, "OMPI_CXX_ABSOLUTE", "\"#{ENV.cxx}\""
+    end
 
     ENV.cxx11
 
@@ -34,12 +66,13 @@ class OpenMpi < Formula
       --disable-dependency-tracking
       --disable-silent-rules
       --enable-ipv6
+      --enable-mca-no-build=reachable-netlink
       --with-libevent=#{Formula["libevent"].opt_prefix}
       --with-sge
     ]
     args << "--with-platform-optimized" if build.head?
 
-    system "./autogen.pl" if build.head?
+    system "./autogen.pl", "--force" if build.head?
     system "./configure", *args
     system "make", "all"
     system "make", "check"

@@ -1,15 +1,16 @@
 class Faudio < Formula
   desc "Accuracy-focused XAudio reimplementation for open platforms"
   homepage "https://fna-xna.github.io/"
-  url "https://github.com/FNA-XNA/FAudio/archive/20.01.tar.gz"
-  sha256 "c015f7d395cf24b9050135238de38683e5a90378215bc6d5bb89777a9623f0e6"
+  url "https://github.com/FNA-XNA/FAudio/archive/21.08.tar.gz"
+  sha256 "42a3a295da44721c63f06fcbf5edf8077a42fdb78313b9e1c065afad12df8063"
+  license "Zlib"
   head "https://github.com/FNA-XNA/FAudio.git"
 
   bottle do
-    cellar :any
-    sha256 "87059201186fe549c3e26afdeb57c9c8842959b64c0b37055e5ad590b44601a7" => :catalina
-    sha256 "ddf962dc7c762b475a8267cd65ddb01661fb6ccb59d6d1d553855a358ff87971" => :mojave
-    sha256 "f3dbf8749263252731a2e8a440431127e57c989942e78e622264330c767f2052" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "07e49b48488a33b2ad7bc3e1312cdbf6bae72de52eb870599a801319c1897a7b"
+    sha256 cellar: :any, big_sur:       "30b7ad5f185b807c2eed5387d074db740951bd7860f6343a66fdb688411a62a7"
+    sha256 cellar: :any, catalina:      "5dad0ae2b04dea6972d528b1c5a864d41917e9218567eb6e6b2caadace829290"
+    sha256 cellar: :any, mojave:        "d0d535518f89a0a7169a52b17e6518c60a00c44aa8efba8dfa278003d10ccf09"
   end
 
   depends_on "cmake" => :build
@@ -20,9 +21,10 @@ class Faudio < Formula
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    FAudio is built without FFmpeg support for decoding xWMA resources.
-  EOS
+  def caveats
+    <<~EOS
+      FAudio is built without FFmpeg support for decoding xWMA resources.
+    EOS
   end
 
   test do

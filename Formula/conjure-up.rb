@@ -3,16 +3,20 @@ class ConjureUp < Formula
 
   desc "Big software deployments so easy it's almost magical"
   homepage "https://conjure-up.io/"
-  url "https://github.com/conjure-up/conjure-up/archive/2.6.9.tar.gz"
-  sha256 "b5ebba187d27b3474b36acd715df015b198c0e5df8aefb32200ba4f3f3de17f4"
-  revision 1
+  url "https://github.com/conjure-up/conjure-up/archive/2.6.14.tar.gz"
+  sha256 "c9f115229a305ff40eae051f40db2ca18a3dc2bd377397e22786bba032feb79a"
+  license "MIT"
+  revision 3
 
   bottle do
-    cellar :any
-    sha256 "fd6b4836be1b7814114bc7ec842511827b14e7d9691aa5210e95ffb859b93cef" => :catalina
-    sha256 "77edef65d3b9d34b3f67c7efbdd05cd9ac0e92613e538aa4e022720d024c1061" => :mojave
-    sha256 "ea0e51f5d572449a15021125e9a92c92437f3a85eb69f503d1c8b3d53c2cf7c5" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "3e516b5c4a0d71ed5d32332fc12703605654c93127e45c8754455e84b4cab93e"
+    sha256 cellar: :any,                 big_sur:       "869c705b0f4392a57afd2ba7e4f7b5260640b5130c47dbb3aeb77bc142296d6c"
+    sha256 cellar: :any,                 catalina:      "2112383857f9f865eff1a9528dd6ab2ace8a7b34be1d4ed3ac4fe80b014f9241"
+    sha256 cellar: :any,                 mojave:        "b36c8bb8462705691744403cdcf6b2da77e7d1391249dba3857297cc950e6b97"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "aedce6905c2975016470f72dfba4ce1ff08addda5eccc6822b41074f0d6d241e"
   end
+
+  deprecate! date: "2021-04-15", because: :repo_archived
 
   depends_on "awscli"
   depends_on "jq"
@@ -20,8 +24,14 @@ class ConjureUp < Formula
   depends_on "juju-wait"
   depends_on "libyaml"
   depends_on "pwgen"
-  depends_on "python@3.8"
+  depends_on "python@3.9"
   depends_on "redis"
+
+  uses_from_macos "libffi"
+
+  on_linux do
+    depends_on "pkg-config" => :build
+  end
 
   # list generated from the 'requirements.txt' file in the repository root
   resource "aiofiles" do
@@ -45,8 +55,8 @@ class ConjureUp < Formula
   end
 
   resource "cffi" do
-    url "https://files.pythonhosted.org/packages/93/1a/ab8c62b5838722f29f3daffcc8d4bd61844aa9b5f437341cc890ceee483b/cffi-1.12.3.tar.gz"
-    sha256 "041c81822e9f84b1d9c401182e174996f0bae9991f33725d059b771744290774"
+    url "https://files.pythonhosted.org/packages/66/6a/98e023b3d11537a5521902ac6b50db470c826c682be6a8c661549cb7717a/cffi-1.14.4.tar.gz"
+    sha256 "1a465cbe98a7fd391d47dce4b8f7e5b921e6cd805ef421d04f5f66ba8f06086c"
   end
 
   resource "chardet" do
@@ -98,10 +108,10 @@ class ConjureUp < Formula
     url "https://files.pythonhosted.org/packages/d0/22/ca60ef57ad0ea904292daaa1cb0f1e991303667f70794a97674f4a3695fa/macaroonbakery-1.2.3.tar.gz"
     sha256 "bd27e7d2d98cb3dc1973d7b67b2a0c475fb005c0f9c35c04dbf9b272e98939ec"
 
-    # Python 3.8 compatibility platform.linux_distribution
+    # Python 3.9 compatibility platform.linux_distribution
     # Remove in next release
     patch do
-      url "https://github.com/go-macaroon-bakery/py-macaroon-bakery/pull/75.patch?full_index=1"
+      url "https://github.com/go-macaroon-bakery/py-macaroon-bakery/commit/78daf9d233e33da3f4bd2c34553843f82c09b21e.patch?full_index=1"
       sha256 "70b36abee3f9d93afee7fb4d4cb9018370aad83f16a2ab7c5b5770aa1178be86"
     end
   end
@@ -251,7 +261,17 @@ class ConjureUp < Formula
     sha256 "08e3c3e0535befa4f0c4443824496c03ecc25062debbcf895874f8a0b4c97c9f"
   end
 
+  # See https://github.com/conjure-up/conjure-up/pull/1655
+  patch do
+    url "https://github.com/conjure-up/conjure-up/commit/d2bf8ab8e71ff01321d0e691a8d3e3833a047678.patch?full_index=1"
+    sha256 "a2bc3249200c1a809c18ffea69c9292a937902dfe2c8b7ee10da4c7aa319469c"
+  end
+
   def install
+    # See https://github.com/conjure-up/conjure-up/pull/1655
+    inreplace "conjureup/juju.py", "os.environ['JUJU']", "\"#{Formula["juju"].opt_bin}/juju\""
+    inreplace "conjureup/juju.py", "os.environ['JUJU_WAIT']", "\"#{Formula["juju-wait"].opt_bin}/juju-wait\""
+
     venv = virtualenv_create(libexec, "python3")
     venv.pip_install resource("cffi") # needs to be installed prior to bcrypt
     res = resources.map(&:name).to_set - ["cffi"]

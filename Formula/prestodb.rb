@@ -1,18 +1,27 @@
 class Prestodb < Formula
   desc "Distributed SQL query engine for big data"
   homepage "https://prestodb.io"
-  url "https://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-server/0.229/presto-server-0.229.tar.gz"
-  sha256 "5b52c207bde5a0dc3c812fad4847001b8ce88de0e17f561d4f1734751c637164"
+  url "https://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-server/0.260/presto-server-0.260.tar.gz"
+  sha256 "dbda91db4b0b9b74dc2f7f663716907211a006028197cc99751ecca7455ca283"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  # Upstream has said that we should check Maven for Presto version information
+  # and the highest version found there is newest:
+  # https://github.com/prestodb/presto/issues/16200
+  livecheck do
+    url "https://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-server/"
+    regex(%r{href=["']?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
-  depends_on :java => "1.8+"
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "c5d8b392c84a508d2cb540c3ce8780ab9d17d6c4f23fc7d606f61c898021893c"
+  end
 
-  conflicts_with "prestosql", :because => "both install `presto` and `presto-server` binaries"
+  depends_on "openjdk"
 
   resource "presto-cli" do
-    url "https://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-cli/0.229/presto-cli-0.229-executable.jar"
-    sha256 "e1f534517443eeb65683f0f7e8468a67c2356d9cac58e1d486d0b26d4f32fd8a"
+    url "https://search.maven.org/remotecontent?filepath=com/facebook/presto/presto-cli/0.260/presto-cli-0.260-executable.jar"
+    sha256 "26a7b6e465b79e06cb377705ed5a1ac575f1b2fa62002fa778e03baf0db438a9"
   end
 
   def install
@@ -33,6 +42,7 @@ class Prestodb < Formula
       -XX:+ExplicitGCInvokesConcurrent
       -XX:+HeapDumpOnOutOfMemoryError
       -XX:+ExitOnOutOfMemoryError
+      -Djdk.attach.allowAttachSelf=true
     EOS
 
     (libexec/"etc/config.properties").write <<~EOS
@@ -49,13 +59,11 @@ class Prestodb < Formula
 
     (libexec/"etc/catalog/jmx.properties").write "connector.name=jmx"
 
-    (bin/"presto-server").write <<~EOS
-      #!/bin/bash
-      exec "#{libexec}/bin/launcher" "$@"
-    EOS
+    (bin/"presto-server").write_env_script libexec/"bin/launcher", Language::Java.overridable_java_home_env
 
     resource("presto-cli").stage do
-      bin.install "presto-cli-#{version}-executable.jar" => "presto"
+      libexec.install "presto-cli-#{version}-executable.jar"
+      bin.write_jar_script libexec/"presto-cli-#{version}-executable.jar", "presto"
     end
   end
 
@@ -63,36 +71,16 @@ class Prestodb < Formula
     (var/"presto/data").mkpath
   end
 
-  def caveats; <<~EOS
-    Add connectors to #{opt_libexec}/etc/catalog/. See:
-    https://prestodb.io/docs/current/connector.html
-  EOS
+  def caveats
+    <<~EOS
+      Add connectors to #{opt_libexec}/etc/catalog/. See:
+      https://prestodb.io/docs/current/connector.html
+    EOS
   end
 
-  plist_options :manual => "presto-server run"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>AbandonProcessGroup</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>#{opt_libexec}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/presto-server</string>
-          <string>run</string>
-        </array>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"presto-server", "run"]
+    working_dir opt_libexec
   end
 
   test do

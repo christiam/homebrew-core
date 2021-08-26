@@ -1,24 +1,36 @@
 class Vte3 < Formula
   desc "Terminal emulator widget used by GNOME terminal"
   homepage "https://developer.gnome.org/vte/"
-  url "https://download.gnome.org/sources/vte/0.58/vte-0.58.3.tar.xz"
-  sha256 "22dcb54ac2ad1a56ab0a745e16ccfeb383f0b5860b5bfa1784561216f98d4975"
+  url "https://download.gnome.org/sources/vte/0.64/vte-0.64.2.tar.xz"
+  sha256 "2b3c820b65a667c1d8859ba20478be626d1519cc3159dac25f703330c6d07e18"
+  license "LGPL-2.0-or-later"
 
   bottle do
-    sha256 "aeeb66c9db3a2dba30cd5e3e96dbc564ccb0b106209976331ca2fc8ea569a991" => :catalina
-    sha256 "f0e9a775f5258e9408f40b8226390aebeec699f75193d89d2a6da7ed118a6d5d" => :mojave
-    sha256 "f90dfe49cd6594238b190281f652c26227b82730becbfa441ecbf11619d8328d" => :high_sierra
+    sha256 arm64_big_sur: "805b98e4a5b77ac8385fdf15c555bdbc6cfa19fa586e140d7f030366c80b1f69"
+    sha256 big_sur:       "80db6f9c0b62cd99beaf9eaadde7be8cfe3c09a54eb9b385bd103891d7a12af8"
+    sha256 catalina:      "ad7a7e195ce43afdf30eff81f83e606b79e78db8e6ed39f0370ef34ebeeb39e4"
+    sha256 mojave:        "2404d321dc1eb3e61c5f6282c214395beae288e97ae62d6d6b5afe3edd9b7adf"
+    sha256 x86_64_linux:  "fb813f9bc1317086d4e1374aa003f0796084aeabc85fa077a40e0a785b877a54"
   end
 
   depends_on "gobject-introspection" => :build
   depends_on "meson" => :build
   depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "vala" => :build
   depends_on "gettext"
   depends_on "gnutls"
   depends_on "gtk+3"
+  depends_on macos: :mojave
   depends_on "pcre2"
-  depends_on "vala"
+
+  on_linux do
+    depends_on "linux-headers@4.15" => :build
+    depends_on "gcc" # for C++17
+    depends_on "systemd"
+  end
+
+  fails_with gcc: "5"
 
   # submitted upstream as https://gitlab.gnome.org/tschoonj/vte/merge_requests/1
   patch :DATA
@@ -26,12 +38,12 @@ class Vte3 < Formula
   def install
     ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
 
-    args = [
-      "--prefix=#{prefix}",
-      "-Dgir=true",
-      "-Dgtk3=true",
-      "-Dgnutls=true",
-      "-Dvapi=true",
+    args = std_meson_args + %w[
+      -Dgir=true
+      -Dgtk3=true
+      -Dgnutls=true
+      -Dvapi=true
+      -D_b_symbolic_functions=false
     ]
 
     mkdir "build" do
@@ -106,12 +118,14 @@ class Vte3 < Formula
       -lgnutls
       -lgobject-2.0
       -lgtk-3
-      -lintl
       -lpango-1.0
       -lpangocairo-1.0
       -lvte-2.91
       -lz
     ]
+    on_macos do
+      flags << "-lintl"
+    end
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end
@@ -119,10 +133,10 @@ end
 
 __END__
 diff --git a/meson.build b/meson.build
-index 82266cf7..2e49d669 100644
+index e2200a75..df98872f 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -72,6 +72,8 @@ lt_age = vte_minor_version * 100 + vte_micro_version - lt_revision
+@@ -78,6 +78,8 @@ lt_age = vte_minor_version * 100 + vte_micro_version - lt_revision
  lt_current = vte_major_version + lt_age
 
  libvte_gtk3_soversion = '@0@.@1@.@2@'.format(libvte_soversion, lt_current, lt_revision)
@@ -132,34 +146,14 @@ index 82266cf7..2e49d669 100644
 
  # i18n
 diff --git a/src/meson.build b/src/meson.build
-index 1481c089..b9590d26 100644
+index 79d4a702..0495dea8 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -178,6 +178,7 @@ if get_option('gtk3')
+@@ -224,6 +224,7 @@ if get_option('gtk3')
      vte_gtk3_api_name,
      sources: libvte_gtk3_sources,
      version: libvte_gtk3_soversion,
 +    darwin_versions: libvte_gtk3_osxversions,
      include_directories: incs,
      dependencies: libvte_gtk3_deps,
-     cpp_args: libvte_common_cppflags,
-
-diff --git a/meson.build b/meson.build
-index 2e49d669..ed8c2ab4 100644
---- a/meson.build
-+++ b/meson.build
-@@ -359,13 +359,8 @@ linker_flags = [
-   '-Wl,-Bsymbolic-functions'
- ]
-
--foreach flag: linker_flags
--  assert(cc.has_link_argument(flag), flag + ' is required but not supported')
--  add_project_link_arguments(flag, language: 'c')
--
--  assert(cxx.has_link_argument(flag), flag + ' is required but not supported')
--  add_project_link_arguments(flag, language: 'cpp')
--endforeach
-+add_project_link_arguments(cc.get_supported_link_arguments(linker_flags), language: 'c')
-+add_project_link_arguments(cxx.get_supported_link_arguments(linker_flags), language: 'cpp')
-
- # Dependencies
+     cpp_args: libvte_gtk3_cppflags,

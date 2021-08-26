@@ -3,20 +3,19 @@ class NodeSass < Formula
 
   desc "JavaScript implementation of a Sass compiler"
   homepage "https://github.com/sass/dart-sass"
-  url "https://registry.npmjs.org/sass/-/sass-1.23.7.tgz"
-  sha256 "6113e3c3034a8d7701c9ecc73e7c2f53e6e419a47d42a63e26ac4546a878328e"
+  url "https://registry.npmjs.org/sass/-/sass-1.38.1.tgz"
+  sha256 "fa6906cd3e394797ef00223e53b989d13c81ab7b764cbcbb6f600b1ba8048128"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "322346ee7f6719fc0697d8c9e5b5209e0169dde870ec9c7ae71fcadb26410797" => :catalina
-    sha256 "a6536baf69cfe20e40be7109e947b008e64b32534e617a4315bc6404e4520478" => :mojave
-    sha256 "ee3a08eb743459e18456808f98f230e779fd72f62716c881fd35da5131e36302" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "613ffa6e3d05c7a4fca8e7300eb35afd84b37e6a5cff383dac6462dafb2355ce"
+    sha256 cellar: :any_skip_relocation, big_sur:       "613ffa6e3d05c7a4fca8e7300eb35afd84b37e6a5cff383dac6462dafb2355ce"
+    sha256 cellar: :any_skip_relocation, catalina:      "613ffa6e3d05c7a4fca8e7300eb35afd84b37e6a5cff383dac6462dafb2355ce"
+    sha256 cellar: :any_skip_relocation, mojave:        "613ffa6e3d05c7a4fca8e7300eb35afd84b37e6a5cff383dac6462dafb2355ce"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "86811920c3c19899e07397762451657e392a5e2b2b0cc52540230c6f9929e9f3"
   end
 
   depends_on "node"
-
-  # waiting for pull request at #47438
-  # conflicts_with "dart-sass", :because => "both install a `sass` binary"
 
   def install
     system "npm", "install", *Language::Node.std_npm_install_args(libexec)

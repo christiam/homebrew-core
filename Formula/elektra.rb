@@ -1,14 +1,22 @@
 class Elektra < Formula
   desc "Framework to access config settings in a global key database"
   homepage "https://libelektra.org/"
-  url "https://www.libelektra.org/ftp/elektra/releases/elektra-0.9.1.tar.gz"
-  sha256 "df1d2ec1b4db9c89c216772f0998581a1cbb665e295ff9a418549360bb42f758"
+  url "https://www.libelektra.org/ftp/elektra/releases/elektra-0.9.7.tar.gz"
+  sha256 "12b7b046004db29317b7b937dc794abf719c400ba3115af8d41849127b562681"
+  license "BSD-3-Clause"
   head "https://github.com/ElektraInitiative/libelektra.git"
 
+  livecheck do
+    url "https://www.libelektra.org/ftp/elektra/releases/"
+    regex(/href=.*?elektra[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+
   bottle do
-    sha256 "a365f031dffd695ded3f1b1aa64320791caf134002f8d7ee89beea4469a5de00" => :catalina
-    sha256 "c2964e938a38c91b3d0322af3eef8ffc397f92b9d2de5365133f50f8142ed532" => :mojave
-    sha256 "6db5a9e59b9db54069636ed12fd73d405447703512717847e4839875c30fe586" => :high_sierra
+    sha256 arm64_big_sur: "5ed421b12c2ead45ba45c7807cd0916ef87f0eda49eab27693bb1077c1cb9fb5"
+    sha256 big_sur:       "fbaacf726a77ec94ebf835aa77bc3db5c6fd7bec4f0895a58a70be8718c7ee9e"
+    sha256 catalina:      "c3ec4af92a0e63e565ca517535c3b3306806bddf1b88878cbf731831ad61b6d0"
+    sha256 mojave:        "e293f9a80501d0435021aa7acbfd6117afcc7928f8fe492bf48e1261064889b0"
+    sha256 x86_64_linux:  "801cebd1353b5a54bf5712ca59f03ea0a8f0110e3e3aeed0dc2c678a5440224f"
   end
 
   depends_on "cmake" => :build
@@ -27,9 +35,9 @@ class Elektra < Formula
   end
 
   test do
-    output = shell_output("#{bin}/kdb get system/elektra/version/infos/licence")
+    output = shell_output("#{bin}/kdb get system:/elektra/version/infos/licence")
     assert_match "BSD", output
-    Utils.popen_read("#{bin}/kdb", "plugin-list").split.each do |plugin|
+    shell_output("#{bin}/kdb plugin-list").split.each do |plugin|
       system "#{bin}/kdb", "plugin-check", plugin
     end
   end

@@ -1,19 +1,27 @@
 class Binaryen < Formula
   desc "Compiler infrastructure and toolchain library for WebAssembly"
   homepage "https://webassembly.org/"
-  url "https://github.com/WebAssembly/binaryen/archive/version_90.tar.gz"
-  sha256 "9bed0a307e3f4782402b5944426f298dbad0028a93c83068ef10af9e3ff27e2b"
-  head "https://github.com/WebAssembly/binaryen.git"
+  url "https://github.com/WebAssembly/binaryen/archive/version_101.tar.gz"
+  sha256 "5d7cdec89957549f01b7c93f080d08827c87bbd4789a34694c740d15d077c041"
+  license "Apache-2.0"
+  head "https://github.com/WebAssembly/binaryen.git", branch: "main"
 
   bottle do
-    cellar :any
-    sha256 "522b1373e4609d0c48a5a962f749d04e3a384163650a41e48c3ecc19cb7e9fee" => :catalina
-    sha256 "503f08001df55166e8728d7ee13fa2791216cea8e5aef1dee3ff2ba88024861a" => :mojave
-    sha256 "e78a30567703250a3643b415adb5f53b2a05e7a915945fc2d70284ee6adff352" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "7c9f6e7464dd612d8fd5ecf97eb28be3a0e785807656971760355dbaee2ab308"
+    sha256 cellar: :any,                 big_sur:       "b5b7f3d6275bcbb2497135dbaa92856172def96355c2e1c4dd3f6d11cbdd4f77"
+    sha256 cellar: :any,                 catalina:      "3c1ec0bef52f4113e4898aec902fb3a631aa36b4ee82c4cbd9732357c5f6f79d"
+    sha256 cellar: :any,                 mojave:        "d69a70807fee88c855c53594d135d358e9b51a4a7d9b50518c7ea09b0df76dc6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "8f95c9ed168f39f4e5bea1ba2316257b42025ba80ffe9fb8208177e7a83b1e29"
   end
 
   depends_on "cmake" => :build
-  depends_on :macos => :el_capitan # needs thread-local storage
+  depends_on "python@3.9" => :build
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     ENV.cxx11
@@ -25,7 +33,6 @@ class Binaryen < Formula
   end
 
   test do
-    system "#{bin}/wasm-opt", "#{pkgshare}/test/passes/O.wast"
-    system "#{bin}/asm2wasm", "#{pkgshare}/test/hello_world.asm.js"
+    system "#{bin}/wasm-opt", "-O", "#{pkgshare}/test/passes/O.wast", "-o", "1.wast"
   end
 end

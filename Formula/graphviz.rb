@@ -1,25 +1,38 @@
 class Graphviz < Formula
   desc "Graph visualization software from AT&T and Bell Labs"
   homepage "https://www.graphviz.org/"
-  url "https://gitlab.com/graphviz/graphviz/-/archive/2.42.2/graphviz-2.42.2.tar.gz"
-  sha256 "b92a92bb16755b11875be9203a6216e5b827eb1d6cf8dda6824380457cd18c55"
+  url "https://gitlab.com/graphviz/graphviz.git",
+      tag:      "2.48.0",
+      revision: "0e477c1e151e57c7d1865ed14e6add1c63c0b03a"
+  license "EPL-1.0"
   version_scheme 1
   head "https://gitlab.com/graphviz/graphviz.git"
 
   bottle do
-    sha256 "fd65173d4f2bf9b4412f42939acc10815ba8974f5cdac342a9afd619acc70829" => :catalina
-    sha256 "abf938b188d15e2bf1b7447635f1e13a46baaa00f0e38ea6e5122e603f6b491d" => :mojave
-    sha256 "df7bafeabe8c94cc513c394ba3fa587ae2b209a25fa42f1b507dfae67029f47d" => :high_sierra
+    sha256 arm64_big_sur: "452ad2a405771fc2d4655d5183f7b3e70520c1cca66c7ccf1567edd8e82a8a11"
+    sha256 big_sur:       "36bb031ebbc2080491538c2e3394c8295f7049db86eb3d9c0d6bb550f1bad10c"
+    sha256 catalina:      "b320c6481e7cc897ec533d7268b57bd668a079e471a7408b642137229872d12e"
+    sha256 mojave:        "0014adcf96e5eff7ede0e08e7b3e045681b03e779c2d5ede2b09dc308050f68c"
+    sha256 x86_64_linux:  "cdbcdcbd4d50288bc1c260eb59d35f5f4adfdf9bbb188d1ae171e5992f2d2833"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
-  depends_on "libtool" => :build
+  depends_on "bison" => :build
   depends_on "pkg-config" => :build
   depends_on "gd"
   depends_on "gts"
   depends_on "libpng"
+  depends_on "librsvg"
   depends_on "libtool"
+  depends_on "pango"
+
+  uses_from_macos "flex" => :build
+
+  on_linux do
+    depends_on "byacc" => :build
+    depends_on "ghostscript" => :build
+  end
 
   def install
     args = %W[
@@ -28,14 +41,21 @@ class Graphviz < Formula
       --prefix=#{prefix}
       --disable-php
       --disable-swig
+      --disable-tcl
       --with-quartz
       --without-freetype2
+      --without-gdk
+      --without-gdk-pixbuf
+      --without-gtk
+      --without-poppler
       --without-qt
       --without-x
       --with-gts
     ]
 
-    system "./autogen.sh", *args
+    system "./autogen.sh"
+    system "./configure", *args
+    system "make"
     system "make", "install"
 
     (bin/"gvmap.sh").unlink

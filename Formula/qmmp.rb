@@ -1,14 +1,20 @@
 class Qmmp < Formula
   desc "Qt-based Multimedia Player"
-  homepage "http://qmmp.ylsoftware.com/"
-  url "http://qmmp.ylsoftware.com/files/qmmp-1.3.5.tar.bz2"
-  sha256 "b59b7d4f0f6a0fa9cdf66a07caecb1a4bdc67e8499df331208666e073f66f340"
-  head "https://svn.code.sf.net/p/qmmp-dev/code/branches/qmmp-1.3/"
+  homepage "https://qmmp.ylsoftware.com/"
+  url "https://downloads.sourceforge.net/project/qmmp-dev/qmmp/1.5/qmmp-1.5.1.tar.bz2"
+  sha256 "f3dc676039b5f190e6a87377a6b2bd2bcca122d1659b5f22668c7a284bb91f43"
+  license "GPL-2.0-or-later"
+  head "https://svn.code.sf.net/p/qmmp-dev/code/branches/qmmp-1.5/"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/qmmp[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    sha256 "b72c77a5741e5430e164ac75440725d165f02cfe5feecec935efa94db2496d16" => :catalina
-    sha256 "511f525b513663c2c8fe713c297425815b6c5ac4623049944ba93aea4effd13e" => :mojave
-    sha256 "e0847a2e67ca2156b2c10a53c7ab0f289365f332578e286ddef25e58d7a89cf3" => :high_sierra
+    sha256 big_sur:  "144bd80fb2a050a68900c40a44f00fc05fb7addc660e7807e900a129f86b8a89"
+    sha256 catalina: "feff3c70d129d608e05e83928031134d9422cfedb52f305617a2c3af62802f19"
+    sha256 mojave:   "7001d36b42beb62f494c03d0e15bf5a153712ad9784af50df1e8042b52d682f6"
   end
 
   depends_on "cmake" => :build
@@ -27,7 +33,7 @@ class Qmmp < Formula
   depends_on "musepack"
   depends_on "opus"
   depends_on "opusfile"
-  depends_on "qt"
+  depends_on "qt@5"
   depends_on "taglib"
 
   def install

@@ -1,14 +1,16 @@
 class Monolith < Formula
   desc "CLI tool for saving complete web pages as a single HTML file"
   homepage "https://github.com/Y2Z/monolith"
-  url "https://github.com/Y2Z/monolith/archive/v2.1.1.tar.gz"
-  sha256 "71d973d829fb23a13e738e9f2b6ad3028e74fd1b57f1f296a8ebe4c32252294a"
+  url "https://github.com/Y2Z/monolith/archive/v2.6.1.tar.gz"
+  sha256 "dc08e6fa786c2cdfc7a8f6c307022c368d875c172737b695222c2b2f3bfe2a72"
+  license "CC0-1.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a8b81e7bb03b848e622600a5abc5925bb5176e0f4d2030079be9d5fc4af22757" => :catalina
-    sha256 "9f288e9ed076af79f677eda57aa815b327c8ef90eae9b970516a1f1d1aead59d" => :mojave
-    sha256 "a4bfc6b8ff57d36e07a933e886a0463b5b1022ad0c455a09a465aec4a19b8077" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "f8d25cc101ab57a7b2392d748815de0d2dbf36654a4ef592b5eedf992846f17a"
+    sha256 cellar: :any_skip_relocation, big_sur:       "f665108ed7bbba69ffd99220d6d23d6baeb380fee9ce569eaef11b510c8affec"
+    sha256 cellar: :any_skip_relocation, catalina:      "03eead42ea9e5f888b968147d1975ffaa04ad470747b985c3920dfe5724f9c62"
+    sha256 cellar: :any_skip_relocation, mojave:        "3794386713e0d813abbcbc6377c943421efb94b8dde4ce01729bd8a88d206af2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "4e39b8d3264fb577e4afb9464c9ca88d0da5646aab9c0f0b09f0f9b48d00ba03"
   end
 
   depends_on "pkg-config" => :build
@@ -16,10 +18,10 @@ class Monolith < Formula
   depends_on "openssl@1.1"
 
   def install
-    system "cargo", "install", "--locked", "--root", prefix, "--path", "."
+    system "cargo", "install", *std_cargo_args
   end
 
   test do
-    system bin/"monolith", "https://lyrics.github.io/db/p/portishead/dummy/roads"
+    system bin/"monolith", "https://lyrics.github.io/db/P/Portishead/Dummy/Roads/"
   end
 end

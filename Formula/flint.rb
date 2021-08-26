@@ -1,22 +1,32 @@
 class Flint < Formula
   desc "C library for number theory"
-  homepage "http://flintlib.org"
-  url "http://flintlib.org/flint-2.5.2.tar.gz"
-  sha256 "cbf1fe0034533c53c5c41761017065f85207a1b770483e98b2392315f6575e87"
-  head "https://github.com/wbhart/flint2.git", :branch => "trunk"
+  homepage "https://flintlib.org"
+  url "https://flintlib.org/flint-2.8.0.tar.gz"
+  sha256 "584235cdc39d779d9920eaef16fe084f3c26ffeeea003a3fff64a20a0f33449e"
+  license "LGPL-2.1-or-later"
+  head "https://github.com/wbhart/flint2.git", branch: "trunk"
 
   bottle do
-    cellar :any
-    sha256 "f6df4b3a018320efc58b97580af06979ade00007812c6deb83ba150911f1bff9" => :catalina
-    sha256 "464d909acc9801c865e85023ab33db1abea9e9a28f81808979d7650370d67417" => :mojave
-    sha256 "952ffcbee931dc8554a69b2828b6ac0293e3981223762eeff0dabab42e365d0a" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "10023af4f5d4d32a49fea846b7880866f0d36905cd0214f32e4c01d201cc0992"
+    sha256 cellar: :any,                 big_sur:       "ec2e3cd85a3ad16d78e96d9389c40a61e14efb2656d07c38f260a11c73c9c80e"
+    sha256 cellar: :any,                 catalina:      "b9493593bead69bf91df54b1432da6e333143cde6550f0bb19f412464efa6a82"
+    sha256 cellar: :any,                 mojave:        "4fe70d7fbf3d9d7e0ba26bd1773870b1e85418385e55046ae9a1eca21707502c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "d9770df8d1e3843a4c47c2835fd266315de1e16801043d57e003f68fa273c343"
   end
 
   depends_on "gmp"
   depends_on "mpfr"
+  depends_on "ntl"
 
   def install
-    system "./configure", "--prefix=#{prefix}"
+    ENV.cxx11
+    args = %W[
+      --with-gmp=#{Formula["gmp"].prefix}
+      --with-mpfr=#{Formula["mpfr"].prefix}
+      --with-ntl=#{Formula["ntl"].prefix}
+      --prefix=#{prefix}
+    ]
+    system "./configure", *args
     system "make"
     system "make", "install"
   end
@@ -25,32 +35,55 @@ class Flint < Formula
     (testpath/"test.c").write <<-EOS
       #include <stdlib.h>
       #include <stdio.h>
-
-      #include <flint/flint.h>
-      #include <flint/fmpz_mod_poly.h>
+      #include "flint.h"
+      #include "fmpz.h"
+      #include "ulong_extras.h"
 
       int main(int argc, char* argv[])
       {
-          fmpz_t n;
-          fmpz_mod_poly_t x, y;
+          slong i, bit_bound;
+          mp_limb_t prime, res;
+          fmpz_t x, y, prod;
 
-          fmpz_init_set_ui(n, 7);
-          fmpz_mod_poly_init(x, n);
-          fmpz_mod_poly_init(y, n);
-          fmpz_mod_poly_set_coeff_ui(x, 3, 5);
-          fmpz_mod_poly_set_coeff_ui(x, 0, 6);
-          fmpz_mod_poly_sqr(y, x);
-          fmpz_mod_poly_print(x); flint_printf("\\n");
-          fmpz_mod_poly_print(y); flint_printf("\\n");
-          fmpz_mod_poly_clear(x);
-          fmpz_mod_poly_clear(y);
-          fmpz_clear(n);
+          if (argc != 2)
+          {
+              flint_printf("Syntax: crt <integer>\\n");
+              return EXIT_FAILURE;
+          }
+
+          fmpz_init(x);
+          fmpz_init(y);
+          fmpz_init(prod);
+
+          fmpz_set_str(x, argv[1], 10);
+          bit_bound = fmpz_bits(x) + 2;
+
+          fmpz_zero(y);
+          fmpz_one(prod);
+
+          prime = 0;
+          for (i = 0; fmpz_bits(prod) < bit_bound; i++)
+          {
+              prime = n_nextprime(prime, 0);
+              res = fmpz_fdiv_ui(x, prime);
+              fmpz_CRT_ui(y, y, prod, res, prime, 1);
+
+              flint_printf("residue mod %wu = %wu; reconstruction = ", prime, res);
+              fmpz_print(y);
+              flint_printf("\\n");
+
+              fmpz_mul_ui(prod, prod, prime);
+          }
+
+          fmpz_clear(x);
+          fmpz_clear(y);
+          fmpz_clear(prod);
 
           return EXIT_SUCCESS;
       }
     EOS
     system ENV.cc, "test.c", "-I#{include}/flint", "-L#{lib}", "-L#{Formula["gmp"].lib}",
            "-lflint", "-lgmp", "-o", "test"
-    system "./test"
+    system "./test", "2"
   end
 end

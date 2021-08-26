@@ -1,14 +1,22 @@
 class TomcatAT8 < Formula
   desc "Implementation of Java Servlet and JavaServer Pages"
   homepage "https://tomcat.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-8/v8.5.50/bin/apache-tomcat-8.5.50.tar.gz"
-  sha256 "ea762293e889f85d40f5ec14ac4474e133a379522d623f4ba5993da6260bf06e"
+  url "https://www.apache.org/dyn/closer.lua?path=tomcat/tomcat-8/v8.5.70/bin/apache-tomcat-8.5.70.tar.gz"
+  mirror "https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.70/bin/apache-tomcat-8.5.70.tar.gz"
+  sha256 "eccb6aed7a768ff16c094c292af520219f2882950aa6a107f92e22ecd872d85f"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  livecheck do
+    url :stable
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "46a70e94c845dd35950e28d708ca63ed0408181e5f4887148859608686a5d780"
+  end
 
   keg_only :versioned_formula
 
-  depends_on :java => "1.7+"
+  depends_on "openjdk"
 
   def install
     # Remove Windows scripts
@@ -17,30 +25,12 @@ class TomcatAT8 < Formula
     # Install files
     prefix.install %w[NOTICE LICENSE RELEASE-NOTES RUNNING.txt]
     libexec.install Dir["*"]
-    bin.install_symlink "#{libexec}/bin/catalina.sh" => "catalina"
+    (bin/"catalina").write_env_script "#{libexec}/bin/catalina.sh", JAVA_HOME: Formula["openjdk"].opt_prefix
   end
 
-  plist_options :manual => "catalina run"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Disabled</key>
-        <false/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/catalina</string>
-          <string>run</string>
-        </array>
-        <key>KeepAlive</key>
-        <true/>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"catalina", "run"]
+    keep_alive true
   end
 
   test do

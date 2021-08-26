@@ -1,15 +1,17 @@
 class Kepubify < Formula
   desc "Convert ebooks from epub to kepub"
   homepage "https://pgaskin.net/kepubify/"
-  url "https://github.com/geek1011/kepubify/archive/v2.4.0.tar.gz"
-  sha256 "8c549f9d4110254726d7aa2c62f694cc3bc4ecfd643932c1d096205bfa1f2f62"
-  head "https://github.com/geek1011/kepubify.git"
+  url "https://github.com/pgaskin/kepubify/archive/v4.0.1.tar.gz"
+  sha256 "30e497e3a8490bcf571d01a7bb6cc2410689fccd7f9a516c31a166460d901aa8"
+  license "MIT"
+  head "https://github.com/pgaskin/kepubify.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "401be729baa7fc2f9bb829269f1ee04494a17c3bcbb22f51ce6fa22de5689b0c" => :catalina
-    sha256 "c12e0cc0d0d83a815475bd3c1abf0639f719b6f2736ec03adb60663bf07edc40" => :mojave
-    sha256 "54fba93cf355c8a1ef099dca00219eefa171bfe0b6efa93a95e24490ec420541" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "b6cd624dfcd004722ed211e192749443e2ca43117d499eb28929c420589978f5"
+    sha256 cellar: :any_skip_relocation, big_sur:       "d7b68d8c1c34a5fe214b38c88eb5a18c11bff5698026e57d440f6f77c8f29297"
+    sha256 cellar: :any_skip_relocation, catalina:      "c8f88fe65e8d02bd957a70630d43fd4007b2c5e8f65c65789353de8b138c765f"
+    sha256 cellar: :any_skip_relocation, mojave:        "e2fdeb917185ea975bb51d87f5e50d214d4d4c8d961b16ab3634ba32dc713eb0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "ad4d4a9dbc75d617f3e8b87f77251c1f82885477915e16c52cfa8f032b13b242"
   end
 
   depends_on "go" => :build
@@ -17,26 +19,24 @@ class Kepubify < Formula
   def install
     ENV["GOPATH"] = HOMEBREW_CACHE/"go_cache"
 
-    ldflags = "-s -w -X main.version=#{version}"
-
-    system "go", "build", "-o", bin/"kepubify",
-                 "-ldflags", ldflags
-
-    system "go", "build", "-o", bin/"covergen",
-                 "-ldflags", ldflags, "./covergen"
-
-    system "go", "build", "-o", bin/"seriesmeta",
-                 "-ldflags", ldflags, "./seriesmeta"
-
-    pkgshare.install "kepub/testdata/books/test1.epub"
+    %w[
+      kepubify
+      covergen
+      seriesmeta
+    ].each do |p|
+      system "go", "build", "-o", bin/p,
+                   "-ldflags", "-s -w -X main.version=#{version}",
+                   "-tags", "zip117",
+                   "./cmd/#{p}"
+    end
   end
 
   test do
     pdf = test_fixtures("test.pdf")
     output = shell_output("#{bin}/kepubify #{pdf} 2>&1", 1)
-    assert_match "not an epub", output
+    assert_match "Error: invalid extension", output
 
-    system bin/"kepubify", pkgshare/"test1.epub"
-    assert_predicate testpath/"test1.kepub.epub", :exist?
+    system bin/"kepubify", test_fixtures("test.epub")
+    assert_predicate testpath/"test_converted.kepub.epub", :exist?
   end
 end

@@ -1,21 +1,27 @@
 class Mdcat < Formula
   desc "Show markdown documents on text terminals"
   homepage "https://github.com/lunaryorn/mdcat"
-  url "https://github.com/lunaryorn/mdcat/archive/mdcat-0.14.0.tar.gz"
-  sha256 "330059534642bba502e82d6a86f16451b7ce9d2ad02e356fd0bcff961020bc9f"
+  url "https://github.com/lunaryorn/mdcat/archive/mdcat-0.23.2.tar.gz"
+  sha256 "354f1bea0a53c5547693b7de9731d6e2648a0da10aa485ca16e4e643e49be14c"
+  license "MPL-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "0f429b5c3439c9cf41671a6967221b13cbc14f5cf419015835ccb4f199a877de" => :catalina
-    sha256 "3717ce4c47ef8073aae8c120b9b13370b4dd5d057fb905702509c5e6bb4cbf46" => :mojave
-    sha256 "5b5a9b299693ba6484ad935420c5b5c2f311b9867dfd9dceed161e168553a9fb" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "503b07b77a2c463c8f91f2c5aba413e9723e1d4cc78fb90cd15809f3f0e7ca2c"
+    sha256 cellar: :any_skip_relocation, big_sur:       "a702508fd962f1575bdc81680d43da1933d405a147112675b6c2c0a1a55ed335"
+    sha256 cellar: :any_skip_relocation, catalina:      "f03d80008eff5ed3598e8eaa3c10be5446ae6737ac4b69af10d45aca58619e3c"
+    sha256 cellar: :any_skip_relocation, mojave:        "3ca1ba76b588574866268d2a624954b8d31c89804d30d00a0fb4e81f86fe1be7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "d927a87695d61b281e1d8449d22614124bdcc18beddce97c244e5bb856a755df"
   end
 
   depends_on "cmake" => :build
   depends_on "rust" => :build
 
+  on_linux do
+    depends_on "pkg-config" => :build
+  end
+
   def install
-    system "cargo", "install", "--locked", "--root", prefix, "--path", "."
+    system "cargo", "install", *std_cargo_args
   end
 
   test do

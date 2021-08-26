@@ -1,23 +1,28 @@
 class Opencc < Formula
   desc "Simplified-traditional Chinese conversion tool"
   homepage "https://github.com/BYVoid/OpenCC"
-  url "https://github.com/BYVoid/OpenCC/archive/ver.1.0.5.tar.gz"
-  sha256 "1ce1649ba280cfc88bb76e740be5f54b29a9c034400c97a3ae211c37d7030705"
+  url "https://github.com/BYVoid/OpenCC/archive/ver.1.1.2.tar.gz"
+  sha256 "8c0f44a210c4ee0cc79972d47829b2f3e1e90a26c4db0949da3ad99a8d1fe375"
+  license "Apache-2.0"
 
   bottle do
-    sha256 "5a217a645ad950e10b28abd054fd205ee92cc9475e965874c9e4ea1d45a08087" => :catalina
-    sha256 "13a6e88594f5f83ae12c7b1d76e54a8dca45f5babf9132dbbe10d8280517a69f" => :mojave
-    sha256 "698426f43bf80050cf64ab752d64ae86644e4c491086b641794a8a4491a7c616" => :high_sierra
-    sha256 "b53f5db30a9865924dde847f6e6bbb7c86f61d08376e89f2566a21494e834a5c" => :sierra
+    rebuild 1
+    sha256 arm64_big_sur: "ac777a972c663aefbc43930b5776eedd1541d93ab2a56e3ad4f02094da662ca3"
+    sha256 big_sur:       "9d31934fcd9abeebb3c0c6a36b7e7aa7c7a658b579da5b1533e02bcd530a6f6f"
+    sha256 catalina:      "f740a308d7ebe1d4091e9e7ee412606353efd8a1d6ef653937613279fb08d63d"
+    sha256 mojave:        "505d227dc8e6acaddaf1c7bbb0b1a367c8eccbadb3d66a44e9d310054f13478b"
+    sha256 x86_64_linux:  "a16376776339777af7a9876272f1e01d0b086fe7bd357f9a6bd44825e18f4ea1"
   end
 
   depends_on "cmake" => :build
 
   def install
     ENV.cxx11
-    system "cmake", ".", "-DBUILD_DOCUMENTATION:BOOL=OFF", *std_cmake_args
-    system "make"
-    system "make", "install"
+    mkdir "build" do
+      system "cmake", "..", "-DBUILD_DOCUMENTATION:BOOL=OFF", *std_cmake_args, "-DCMAKE_INSTALL_RPATH=#{rpath}"
+      system "make"
+      system "make", "install"
+    end
   end
 
   test do

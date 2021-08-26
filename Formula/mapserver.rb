@@ -1,14 +1,19 @@
 class Mapserver < Formula
   desc "Publish spatial data and interactive mapping apps to the web"
   homepage "https://mapserver.org/"
-  url "https://download.osgeo.org/mapserver/mapserver-7.4.3.tar.gz"
-  sha256 "c8cc4dc994b61d7bc5767419da40d7af9e7566669d6800e4c2d4e11a91656f45"
+  url "https://download.osgeo.org/mapserver/mapserver-7.6.4.tar.gz"
+  sha256 "b46c884bc42bd49873806a05325872e4418fc34e97824d4e13d398e86ea474ac"
+  license "MIT"
+
+  livecheck do
+    url "https://mapserver.org/download.html"
+    regex(/href=.*?mapserver[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "0d7cdf4bd7e9316d7e746d5e2e790dc1e87a6e4ceaf47fb0b698b228478780cc" => :catalina
-    sha256 "52d1c0ad676faf35615bb71d76e99e577dbebb92ad64f82e0567882f03b3a57c" => :mojave
-    sha256 "da521a03d022c4cf103fbd129409d288dd96d9c6fe74f90115e21348d4c783cd" => :high_sierra
+    sha256 cellar: :any, big_sur:  "613314de0ebaeb0df201178f4ee23d36fea4f9302a5ca20d875b356004220cd9"
+    sha256 cellar: :any, catalina: "3f434172773dc3312a3787f5018e7a61849534f036082c45ad285dd2a8f4280d"
+    sha256 cellar: :any, mojave:   "aa2236e1cc9e14a965996188bc9c1988f6327266ef62891a70c8f0f6588c38a1"
   end
 
   depends_on "cmake" => :build
@@ -23,14 +28,15 @@ class Mapserver < Formula
   depends_on "giflib"
   depends_on "libpng"
   depends_on "postgresql"
-  depends_on "proj"
+  depends_on "proj@7"
   depends_on "protobuf-c"
-  depends_on "python"
+  depends_on "python@3.9"
+
+  uses_from_macos "curl"
 
   def install
     ENV.cxx11
 
-    python_executable = Utils.popen_read("python3 -c 'import sys;print(sys.executable)'").chomp
     args = std_cmake_args + %w[
       -DWITH_CLIENT_WFS=ON
       -DWITH_CLIENT_WMS=ON
@@ -47,7 +53,7 @@ class Mapserver < Formula
       -DWITH_SOS=ON
       -DWITH_WFS=ON
     ]
-    args << "-DPYTHON_EXECUTABLE=#{python_executable}"
+    args << "-DPYTHON_EXECUTABLE=#{Formula["python@3.9"].opt_bin/"python3"}"
     args << "-DPHP_EXTENSION_DIR=#{lib}/php/extensions"
 
     # Install within our sandbox
@@ -64,13 +70,13 @@ class Mapserver < Formula
       system "cmake", "..", *args
       system "make", "install"
       cd "mapscript/python" do
-        system "python3", *Language::Python.setup_install_args(prefix)
+        system Formula["python@3.9"].opt_bin/"python3", *Language::Python.setup_install_args(prefix)
       end
     end
   end
 
   test do
     assert_match version.to_s, shell_output("#{bin}/mapserv -v")
-    system "python3", "-c", "import mapscript"
+    system Formula["python@3.9"].opt_bin/"python3", "-c", "import mapscript"
   end
 end

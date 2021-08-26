@@ -2,17 +2,14 @@ require "language/node"
 
 class HttpServer < Formula
   desc "Simple zero-configuration command-line HTTP server"
-  homepage "https://github.com/indexzero/http-server"
-  url "https://registry.npmjs.org/http-server/-/http-server-0.11.1.tgz"
-  sha256 "4154aba3e09f21595e26fdd174d9773e22755c0009f661bed54b8647fc987d95"
-  head "https://github.com/indexzero/http-server.git"
+  homepage "https://github.com/http-party/http-server"
+  url "https://registry.npmjs.org/http-server/-/http-server-13.0.1.tgz"
+  sha256 "35e08960062d766ad4c1e098f65b6e8bfb44f12516da90fd2df9974729652f03"
+  license "MIT"
+  head "https://github.com/http-party/http-server.git"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "665fb079e61a54404b0cca165221606a3e4eaea7e0e8dbb3d09868402d67d1b5" => :catalina
-    sha256 "73f8bae1002efba8e3799e5f0394831dd79b53b264e0581cfac6f8ab8ee58002" => :mojave
-    sha256 "346263e7a818fbaeeb2dfc7dee4e57b908bb2eafcc407609ce3ca336b47132ba" => :high_sierra
+    sha256 cellar: :any_skip_relocation, all: "27f327beb2f485c4885636bbede7d6096a69659ee595b10621cf0a59d8797d32"
   end
 
   depends_on "node"
@@ -23,16 +20,14 @@ class HttpServer < Formula
   end
 
   test do
-    server = TCPServer.new(0)
-    port = server.addr[1]
-    server.close
+    port = free_port
 
     pid = fork do
       exec "#{bin}/http-server", "-p#{port}"
     end
-    sleep 1
+    sleep 3
     output = shell_output("curl -sI http://localhost:#{port}")
-    assert_match /200 OK/m, output
+    assert_match "200 OK", output
   ensure
     Process.kill("HUP", pid)
   end

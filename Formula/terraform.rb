@@ -1,41 +1,46 @@
 class Terraform < Formula
   desc "Tool to build, change, and version infrastructure"
   homepage "https://www.terraform.io/"
-  url "https://github.com/hashicorp/terraform/archive/v0.12.18.tar.gz"
-  sha256 "1253a870ba2c1d9a873f6bfcaa2e4450573fd06177705f0faeb451157e1dde8b"
-  head "https://github.com/hashicorp/terraform.git"
+  url "https://github.com/hashicorp/terraform/archive/v1.0.5.tar.gz"
+  sha256 "191cf75d7f68592d23983d36a0ead27956e150403fafece4613e0f7762716315"
+  license "MPL-2.0"
+  head "https://github.com/hashicorp/terraform.git", branch: "main"
+
+  livecheck do
+    url "https://releases.hashicorp.com/terraform/"
+    regex(%r{href=.*?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "4e2570054d1ba391f3d6afbc436c674e141c0cda3fa263296ff53de15bb906f5" => :catalina
-    sha256 "cb5c53c5e4359c44f6463b08bff382cd1c5efb0c095e61815a197bfde4877ad5" => :mojave
-    sha256 "3a005e9c9a485df647c43c142287f37eb090470a3b8b7c42c2e40558e4c34e67" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "35551b090abaf0af89c575b7e755bfdccd65b2abd349a47ed7a7338718fb3f1f"
+    sha256 cellar: :any_skip_relocation, big_sur:       "1fd4215977639bd3bd736703b59dbe706fa3868a625ccff97a6b71680be9e0d0"
+    sha256 cellar: :any_skip_relocation, catalina:      "5163dbc7870c3feec550ce71b4dfb24fa058e917b5f781066ade294c6be8b711"
+    sha256 cellar: :any_skip_relocation, mojave:        "b716800264f580e706d41d5562e5d1b1b80ec4fa22a11d735f6916f59cda2685"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "3788da8ae16ff5c86711b3daf2117588b5135b49c5a88ad81ba6403115430bd2"
   end
 
   depends_on "go" => :build
-  depends_on "gox" => :build
 
-  conflicts_with "tfenv", :because => "tfenv symlinks terraform binaries"
+  on_linux do
+    depends_on "gcc"
+  end
+
+  conflicts_with "tfenv", because: "tfenv symlinks terraform binaries"
+
+  # Needs libraries at runtime:
+  # /usr/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by node)
+  fails_with gcc: "5"
 
   def install
-    ENV["GOPATH"] = buildpath
-    ENV.prepend_create_path "PATH", buildpath/"bin"
+    # v0.6.12 - source contains tests which fail if these environment variables are set locally.
+    ENV.delete "AWS_ACCESS_KEY"
+    ENV.delete "AWS_SECRET_KEY"
 
-    dir = buildpath/"src/github.com/hashicorp/terraform"
-    dir.install buildpath.children - [buildpath/".brew_home"]
+    # resolves issues fetching providers while on a VPN that uses /etc/resolv.conf
+    # https://github.com/hashicorp/terraform/issues/26532#issuecomment-720570774
+    ENV["CGO_ENABLED"] = "1"
 
-    cd dir do
-      # v0.6.12 - source contains tests which fail if these environment variables are set locally.
-      ENV.delete "AWS_ACCESS_KEY"
-      ENV.delete "AWS_SECRET_KEY"
-
-      ENV["XC_OS"] = "darwin"
-      ENV["XC_ARCH"] = "amd64"
-      system "make", "tools", "bin"
-
-      bin.install "pkg/darwin_amd64/terraform"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args, "-ldflags", "-s -w"
   end
 
   test do

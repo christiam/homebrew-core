@@ -1,34 +1,31 @@
 class Field3d < Formula
   desc "Library for storing voxel data on disk and in memory"
   homepage "https://sites.google.com/site/field3d/"
-  url "https://github.com/imageworks/Field3D/archive/v1.7.2.tar.gz"
-  sha256 "8f7c33ecb4489ed626455cf3998d911a079b4f137f86814d9c37c5765bf4b020"
-  revision 10
+  url "https://github.com/imageworks/Field3D/archive/v1.7.3.tar.gz"
+  sha256 "b6168bc27abe0f5e9b8d01af7794b3268ae301ac72b753712df93125d51a0fd4"
+  license "BSD-3-Clause"
+  revision 4
 
   bottle do
-    cellar :any
-    sha256 "a790934191e341047106165eff2a5f812f16114c9559d0f8986722a3a4991230" => :catalina
-    sha256 "6a675590f02785539160e54cfb49ffc2b041da2b6276abcd2c67b56c85e805f9" => :mojave
-    sha256 "82a33f663441303c0c8a9412e3e4c62a883a58ed2a1eda1981a41cd7d44b72c4" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "b12b7bbffb37cac1a70220ad329743dbd1eb47c44e7229a8646d9b14124151f2"
+    sha256 cellar: :any, big_sur:       "90b0c9cc4ab05cfcbfa656aa634f808513d6f4e8f11a51f43d7a34abd8dd4f1f"
+    sha256 cellar: :any, catalina:      "76d498d553b562262c1654c1cd717057eaf0bc78d03bbe20dfb3e55c55f5d5a4"
+    sha256 cellar: :any, mojave:        "c5722c3960ff48af8007245cdf71a818d292ce76b85abf998c2a9623da3297a4"
   end
 
-  depends_on "scons" => :build
+  depends_on "cmake" => :build
   depends_on "boost"
   depends_on "hdf5"
   depends_on "ilmbase"
 
-  # Append C++11 flag to CXXFLAGS
-  # https://github.com/imageworks/Field3D/pull/97
-  patch do
-    url "https://github.com/imageworks/Field3D/pull/97.diff?full_index=1"
-    sha256 "a2fdd2a1d10fbf62c0ee67a6e1a63919dad8aa509004401d60de939315779288"
-  end
-
   def install
     ENV.cxx11
-    system "scons"
-    include.install Dir["install/**/**/release/include/*"]
-    lib.install Dir["install/**/**/release/lib/*"]
+    ENV.prepend "CXXFLAGS", "-DH5_USE_110_API"
+
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args, "-DMPI_FOUND=OFF"
+      system "make", "install"
+    end
     man1.install "man/f3dinfo.1"
     pkgshare.install "contrib", "test", "apps/sample_code"
   end

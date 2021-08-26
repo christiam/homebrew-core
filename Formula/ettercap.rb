@@ -1,15 +1,19 @@
 class Ettercap < Formula
   desc "Multipurpose sniffer/interceptor/logger for switched LAN"
   homepage "https://ettercap.github.io/ettercap/"
-  url "https://github.com/Ettercap/ettercap/archive/v0.8.3.tar.gz"
-  sha256 "d561a554562e447f4d7387a9878ba745e1aa8c4690cc4e9faaa779cfdaa61fbb"
-  revision 2
+  url "https://github.com/Ettercap/ettercap/archive/v0.8.3.1.tar.gz"
+  sha256 "d0c3ef88dfc284b61d3d5b64d946c1160fd04276b448519c1ae4438a9cdffaf3"
+  license "GPL-2.0-or-later"
   head "https://github.com/Ettercap/ettercap.git"
 
   bottle do
-    sha256 "b4a9470528f89b21eeec6c8d4a5b36043e0277780f780a28bcd512e167b7345a" => :catalina
-    sha256 "899edd3a4fc1994b43e40c4b3b8627c2782a7dff27510a9e9cda829743714548" => :mojave
-    sha256 "c125a9e33ad530738bc63e3558991f7aabec1135708db08913afa9453dd01c07" => :high_sierra
+    rebuild 1
+    sha256 arm64_big_sur: "9e53f689acd75a9aa32129e3aa3d81af5f799889ed3144adb3e867c6f2470369"
+    sha256 big_sur:       "471e0a6f6fb68103bc56ccf90b873cd86c235c34e88972828b6ba69dd2fd9f44"
+    sha256 catalina:      "e52f75a8579926652f5c53ef77db1eeab39f0ff388ad77fbbe70a17a52554c2b"
+    sha256 mojave:        "c49b5293922b69715b05c1bc1374cec3cfe72a63750ab0fb08d559683d253afc"
+    sha256 high_sierra:   "3ab1aa27eef60cb9099bdd95ca330c0fd63dad10c169c968672bb44d97ae32e1"
+    sha256 x86_64_linux:  "58d95c7e206ac3c4f3ccb46f8427b40e63b70bf068239211a1e15656244a0b85"
   end
 
   depends_on "cmake" => :build
@@ -20,10 +24,18 @@ class Ettercap < Formula
   depends_on "openssl@1.1"
   depends_on "pcre"
 
+  uses_from_macos "curl"
+  uses_from_macos "libpcap"
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
+
   def install
     # Work around a CMake bug affecting harfbuzz headers and pango
     # https://gitlab.kitware.com/cmake/cmake/issues/19531
     ENV.append_to_cflags "-I#{Formula["harfbuzz"].opt_include}/harfbuzz"
+
+    # Fix build error on wdg_file.c: fatal error: menu.h: No such file or directory
+    on_linux { ENV.append_to_cflags "-I#{Formula["ncurses"].opt_include}/ncursesw" }
 
     args = std_cmake_args + %W[
       -DBUNDLED_LIBS=OFF
@@ -34,9 +46,11 @@ class Ettercap < Formula
       -DENABLE_PDF_DOCS=OFF
       -DENABLE_PLUGINS=ON
       -DGTK_BUILD_TYPE=GTK3
+      -DGTK3_GLIBCONFIG_INCLUDE_DIR=#{Formula["glib"].opt_lib}/glib-2.0/include
       -DINSTALL_DESKTOP=ON
       -DINSTALL_SYSCONFDIR=#{etc}
     ]
+    on_linux { args << "-DPOLKIT_DIR=#{share}/polkit-1/actions/" }
 
     mkdir "build" do
       system "cmake", "..", *args

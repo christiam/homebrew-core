@@ -2,15 +2,17 @@ class Minikube < Formula
   desc "Run a Kubernetes cluster locally"
   homepage "https://minikube.sigs.k8s.io/"
   url "https://github.com/kubernetes/minikube.git",
-      :tag      => "v1.6.2",
-      :revision => "54f28ac5d3a815d1196cd5d57d707439ee4bb392"
+      tag:      "v1.22.0",
+      revision: "a03fbcf166e6f74ef224d4a63be4277d017bb62e"
+  license "Apache-2.0"
   head "https://github.com/kubernetes/minikube.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "56aefe2d8de9c83559bc3ff540b3c2ac4e3c452d3f0715bb8cf570a741ab7158" => :catalina
-    sha256 "4af6de02024bd7d3f0d73e1620dbc3f75f9d74ada020bb20a34048bc58b6dc91" => :mojave
-    sha256 "ffc150f88d9a986053427939ee2af10ca757b20b32a3edd1dabb2dd9931a058d" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "d1ea963733dda06b43df6c1b34b87c4365ee055ce01cca8eb8bf90f2a7904468"
+    sha256 cellar: :any_skip_relocation, big_sur:       "476bb6663d4bd767e914c24b8c72cdbf3c12641aab6ac8fa59adb6b56cbe91f7"
+    sha256 cellar: :any_skip_relocation, catalina:      "5d3c3706be8d9f71cb9505fb10abb239a8dc491b68ef803030a83d431f1b1113"
+    sha256 cellar: :any_skip_relocation, mojave:        "b56e75f3f8c29eef6457c7c0d01eceb6623c5630f63f5fd2d3277cf40e08a016"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "8b2596238b1a4b9e7219ea490436075cb2b80f2ba2b855e3875a38496beb5574"
   end
 
   depends_on "go" => :build
@@ -21,11 +23,14 @@ class Minikube < Formula
     system "make"
     bin.install "out/minikube"
 
-    output = Utils.popen_read("#{bin}/minikube completion bash")
+    output = Utils.safe_popen_read("#{bin}/minikube", "completion", "bash")
     (bash_completion/"minikube").write output
 
-    output = Utils.popen_read("#{bin}/minikube completion zsh")
+    output = Utils.safe_popen_read("#{bin}/minikube", "completion", "zsh")
     (zsh_completion/"_minikube").write output
+
+    output = Utils.safe_popen_read("#{bin}/minikube", "completion", "fish")
+    (fish_completion/"minikube.fish").write output
   end
 
   test do

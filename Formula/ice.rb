@@ -1,25 +1,30 @@
 class Ice < Formula
   desc "Comprehensive RPC framework"
   homepage "https://zeroc.com"
-  url "https://github.com/zeroc-ice/ice/archive/v3.7.3.tar.gz"
-  sha256 "7cbfac83684a7434499f165e784a7a7bb5b89140717537067d7b969eccc111eb"
+  url "https://github.com/zeroc-ice/ice/archive/v3.7.6.tar.gz"
+  sha256 "75b18697c0c74f363bd0b85943f15638736e859c26778337cbfe72d31f5cfb47"
+  license "GPL-2.0-only"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "3fdec454548d572b2f8524b326570a404c227e546ec4040d302ddb46f7949f07" => :catalina
-    sha256 "6a0804cfa9537a78d77b4c0304fb8ade3238795c3b152ddf2b5f86f05c770205" => :mojave
-    sha256 "5eced597ad649064bb8386c1b5a19e43f4774ae56587f280eb988fd10cd2d9a1" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "aba8e77b6144ab02730670f94205ea2de3efd4581b6e1f167ae1ae48bd5405ae"
+    sha256 cellar: :any, big_sur:       "0c63ce1c5ea37d98b1cd64411e5c6d9e445330c44ab6cb864bd1995b1d5fb91f"
+    sha256 cellar: :any, catalina:      "107f893606aa135531ca17cbb0328f1e664040d36c5373e83a856ba525ba3647"
   end
 
   depends_on "lmdb"
+  depends_on macos: :catalina
   depends_on "mcpp"
 
   def install
-    ENV.O2 # Os causes performance issues
-
     args = [
       "prefix=#{prefix}",
       "V=1",
+      "USR_DIR_INSTALL=yes", # ensure slice and man files are installed to share
       "MCPP_HOME=#{Formula["mcpp"].opt_prefix}",
       "LMDB_HOME=#{Formula["lmdb"].opt_prefix}",
       "CONFIGS=shared cpp11-shared xcodesdk cpp11-xcodesdk",
@@ -27,6 +32,7 @@ class Ice < Formula
       "SKIP=slice2confluence",
       "LANGUAGES=cpp objective-c",
     ]
+    inreplace "cpp/include/Ice/Object.h", /^#.+"-Wdeprecated-copy-dtor"+/, "" # fails with Xcode < 12.5
     system "make", "install", *args
 
     (libexec/"bin").mkpath
@@ -35,13 +41,14 @@ class Ice < Formula
     end
   end
 
-  def caveats; <<~EOS
-    slice2py, slice2js and slice2rb were installed in:
+  def caveats
+    <<~EOS
+      slice2py, slice2js and slice2rb were installed in:
 
-      #{opt_libexec}/bin
+        #{opt_libexec}/bin
 
-    You may wish to add this directory to your PATH.
-  EOS
+      You may wish to add this directory to your PATH.
+    EOS
   end
 
   test do

@@ -1,28 +1,29 @@
 class Tflint < Formula
   desc "Linter for Terraform files"
-  homepage "https://github.com/wata727/tflint"
-  url "https://github.com/wata727/tflint.git",
-    :tag      => "v0.13.4",
-    :revision => "5a562ba4f82dc2bda691b0a39f8f8d04c18f6f05"
-  head "https://github.com/wata727/tflint.git"
+  homepage "https://github.com/terraform-linters/tflint"
+  url "https://github.com/terraform-linters/tflint/archive/v0.31.0.tar.gz"
+  sha256 "3a8a3aeae3d4b09df3c5c9eed07c2da1680191e6493c31642e0fa3f518c341da"
+  license "MPL-2.0"
+  head "https://github.com/terraform-linters/tflint.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "405d8c1287aa2528044c95a77dbcc1f060baa5ac2b3d850ffe4ec99ee974aa1d" => :catalina
-    sha256 "65bba6b9b8a3cb7e2e69b25399134a7913e2edc17ed330667b9d2846f48341c4" => :mojave
-    sha256 "acf82a32a8b499e3182643b6f5e113fdbe7c327fb41b3de07b11e25e2b0a82cf" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "5ec327d9213b538cb3dd338e1131ff2d4e6b12816289ccf88a82c3515fb041cb"
+    sha256 cellar: :any_skip_relocation, big_sur:       "0029f11368d1908036175629d54245816e7d3b2aca2b5797385a4e4b139c16cb"
+    sha256 cellar: :any_skip_relocation, catalina:      "46b711343a6c4d84d16681d918795993f82b469f1360f50473164bf4d4797d7b"
+    sha256 cellar: :any_skip_relocation, mojave:        "3b1815305dd1f9077d120f9100471331469e27980ce32ff98f0162229fd91ba6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "09768ffed517264e27032efe2749e71213bfa981f46ded8d468ff793eeae4111"
   end
 
   depends_on "go" => :build
 
   def install
-    system "go", "build", "-o", bin/"tflint"
+    system "go", "build", "-ldflags", "-s -w", "-o", bin/"tflint"
   end
 
   test do
     (testpath/"test.tf").write <<~EOS
       provider "aws" {
-        region = "${var.aws_region}"
+        region = var.aws_region
       }
     EOS
 

@@ -1,26 +1,52 @@
 class MysqlAT57 < Formula
   desc "Open source relational database management system"
   homepage "https://dev.mysql.com/doc/refman/5.7/en/"
-  url "https://cdn.mysql.com/Downloads/MySQL-5.7/mysql-boost-5.7.28.tar.gz"
-  sha256 "f16399315212117c08f9bdf8a0d682728b2ce82d691bcfbf25a770f413b6f2da"
+  url "https://cdn.mysql.com/Downloads/MySQL-5.7/mysql-boost-5.7.35.tar.gz"
+  sha256 "6b30c93e5927857e31769bf5356eb23a5cff59c0a0205e5772b51b09bf3f9e12"
+  license "GPL-2.0-only"
+
+  livecheck do
+    url "https://dev.mysql.com/downloads/mysql/5.7.html?tpl=files&os=src&version=5.7"
+    regex(/href=.*?mysql[._-](?:boost[._-])?v?(5\.7(?:\.\d+)*)\.t/i)
+  end
 
   bottle do
-    sha256 "25979cdf7664ceabbe69c4423317612e51cb2dc73d4e5cb4e24abefc29aa018a" => :catalina
-    sha256 "81cf2771fd65d0fda6536bde1366622d5305d6720ba5822a4919acd661509613" => :mojave
-    sha256 "c4b91823da381ca3f5c1d4016b35b0f5c02c947eecad788541cb666bfbb49290" => :high_sierra
+    sha256 arm64_big_sur: "91e49378fe45b90275c58685ad29ba77b62ab6993597e2436c6bfa1ec160365d"
+    sha256 big_sur:       "b926b1d4c78ae82a20758d40c1a0ca472feae13095c293114ddcefde679f8c98"
+    sha256 catalina:      "8821d67ae0a2a21ab99a4b69bc5551244365d20fcf942e3b4ae792d174536253"
+    sha256 mojave:        "bc9a49d7e64518277596abeb007a5a129251245c7c63dbfcd1c99fc557c04df9"
+    sha256 x86_64_linux:  "34293e451ebc08a20aae04ddf26c1cc2788cf4604f7f79774523f9d5e0d91d8a"
   end
 
   keg_only :versioned_formula
 
   depends_on "cmake" => :build
-
   depends_on "openssl@1.1"
+
+  uses_from_macos "libedit"
+
+  on_linux do
+    depends_on "pkg-config" => :build
+  end
 
   def datadir
     var/"mysql"
   end
 
+  # Fixes loading of VERSION file, backported from mysql/mysql-server@51675dd
+  patch :DATA
+
   def install
+    on_linux do
+      # Fix libmysqlgcs.a(gcs_logging.cc.o): relocation R_X86_64_32
+      # against `_ZN17Gcs_debug_options12m_debug_noneB5cxx11E' can not be used when making
+      # a shared object; recompile with -fPIC
+      ENV.append_to_cflags "-fPIC"
+    end
+
+    # Fixes loading of VERSION file; used in conjunction with patch
+    File.rename "VERSION", "MYSQL_VERSION"
+
     # -DINSTALL_* are relative to `CMAKE_INSTALL_PREFIX` (`prefix`)
     args = %W[
       -DCOMPILATION_COMMENT=Homebrew
@@ -37,6 +63,7 @@ class MysqlAT57 < Formula
       -DWITH_BOOST=boost
       -DWITH_EDITLINE=system
       -DWITH_SSL=yes
+      -DWITH_NUMA=OFF
       -DWITH_UNIT_TESTS=OFF
       -DWITH_EMBEDDED_SERVER=ON
       -DENABLED_LOCAL_INFILE=1
@@ -75,8 +102,12 @@ class MysqlAT57 < Formula
   end
 
   def post_install
-    # Make sure the datadir exists
-    datadir.mkpath
+    # Make sure the var/mysql directory exists
+    (var/"mysql").mkpath
+
+    # Don't initialize database, it clashes when testing other MySQL-like implementations.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
     unless (datadir/"mysql/general_log.CSM").exist?
       ENV["TMPDIR"] = nil
       system bin/"mysqld", "--initialize-insecure", "--user=#{ENV["USER"]}",
@@ -94,7 +125,7 @@ class MysqlAT57 < Formula
       To connect run:
           mysql -uroot
     EOS
-    if my_cnf = ["/etc/my.cnf", "/etc/mysql/my.cnf"].find { |x| File.exist? x }
+    if (my_cnf = ["/etc/my.cnf", "/etc/mysql/my.cnf"].find { |x| File.exist? x })
       s += <<~EOS
 
         A "#{my_cnf}" from another install may interfere with a Homebrew-built
@@ -104,47 +135,70 @@ class MysqlAT57 < Formula
     s
   end
 
-  plist_options :manual => "#{HOMEBREW_PREFIX}/opt/mysql@5.7/bin/mysql.server start"
+  plist_options manual: "#{HOMEBREW_PREFIX}/opt/mysql@5.7/bin/mysql.server start"
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/mysqld_safe</string>
-        <string>--datadir=#{datadir}</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{datadir}</string>
-    </dict>
-    </plist>
-  EOS
+  def plist
+    <<~EOS
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>KeepAlive</key>
+        <true/>
+        <key>Label</key>
+        <string>#{plist_name}</string>
+        <key>ProgramArguments</key>
+        <array>
+          <string>#{opt_bin}/mysqld_safe</string>
+          <string>--datadir=#{datadir}</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>WorkingDirectory</key>
+        <string>#{datadir}</string>
+      </dict>
+      </plist>
+    EOS
   end
 
   test do
-    # Expects datadir to be a completely clean dir, which testpath isn't.
-    dir = Dir.mktmpdir
-    system bin/"mysqld", "--initialize-insecure", "--user=#{ENV["USER"]}",
-    "--basedir=#{prefix}", "--datadir=#{dir}", "--tmpdir=#{dir}"
-
-    pid = fork do
-      exec bin/"mysqld", "--bind-address=127.0.0.1", "--datadir=#{dir}"
+    (testpath/"mysql").mkpath
+    (testpath/"tmp").mkpath
+    system bin/"mysqld", "--no-defaults", "--initialize-insecure", "--user=#{ENV["USER"]}",
+      "--basedir=#{prefix}", "--datadir=#{testpath}/mysql", "--tmpdir=#{testpath}/tmp"
+    port = free_port
+    fork do
+      system "#{bin}/mysqld", "--no-defaults", "--user=#{ENV["USER"]}",
+        "--datadir=#{testpath}/mysql", "--port=#{port}", "--tmpdir=#{testpath}/tmp"
     end
-    sleep 2
-
-    output = shell_output("curl 127.0.0.1:3306")
-    output.force_encoding("ASCII-8BIT") if output.respond_to?(:force_encoding)
-    assert_match version.to_s, output
-  ensure
-    Process.kill(9, pid)
-    Process.wait(pid)
+    sleep 5
+    assert_match "information_schema",
+      shell_output("#{bin}/mysql --port=#{port} --user=root --password= --execute='show databases;'")
+    system "#{bin}/mysqladmin", "--port=#{port}", "--user=root", "--password=", "shutdown"
   end
 end
+
+__END__
+diff --git a/cmake/mysql_version.cmake b/cmake/mysql_version.cmake
+index 43d731e..3031258 100644
+--- a/cmake/mysql_version.cmake
++++ b/cmake/mysql_version.cmake
+@@ -31,7 +31,7 @@ SET(DOT_FRM_VERSION "6")
+ 
+ # Generate "something" to trigger cmake rerun when VERSION changes
+ CONFIGURE_FILE(
+-  ${CMAKE_SOURCE_DIR}/VERSION
++  ${CMAKE_SOURCE_DIR}/MYSQL_VERSION
+   ${CMAKE_BINARY_DIR}/VERSION.dep
+ )
+ 
+@@ -39,7 +39,7 @@ CONFIGURE_FILE(
+ 
+ MACRO(MYSQL_GET_CONFIG_VALUE keyword var)
+  IF(NOT ${var})
+-   FILE (STRINGS ${CMAKE_SOURCE_DIR}/VERSION str REGEX "^[ ]*${keyword}=")
++   FILE (STRINGS ${CMAKE_SOURCE_DIR}/MYSQL_VERSION str REGEX "^[ ]*${keyword}=")
+    IF(str)
+      STRING(REPLACE "${keyword}=" "" str ${str})
+      STRING(REGEX REPLACE  "[ ].*" ""  str "${str}")
+

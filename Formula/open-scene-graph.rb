@@ -1,14 +1,17 @@
 class OpenSceneGraph < Formula
   desc "3D graphics toolkit"
   homepage "https://github.com/openscenegraph/OpenSceneGraph"
-  url "https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.6.4.tar.gz"
-  sha256 "81394d1b484c631028b85d21c5535280c21bbd911cb058e8746c87e93e7b9d33"
+  url "https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.6.5.tar.gz"
+  sha256 "aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12"
+  license "LGPL-2.1-or-later" => { with: "WxWindows-exception-3.1" }
+  revision 1
   head "https://github.com/openscenegraph/OpenSceneGraph.git"
 
   bottle do
-    sha256 "37cc7954c600e2fe0f65f572b688de6baaf412a7953cf3c53960fa3033a849a1" => :catalina
-    sha256 "9eb6303b01ad351b61d80b93e2448065820592042954dfa13bc8177943863b6c" => :mojave
-    sha256 "fb185cfd6505823c2f6fd7c4832c16eec1ae075a9173a24ff5c21aebb86bd537" => :high_sierra
+    sha256 arm64_big_sur: "83350482064d3e55281b5c4a808f4629ce0c243a49fb57e68e5f63d2d5a411c4"
+    sha256 big_sur:       "77b57e3edeb952002a4c43c90af2c2ada2813bb35d45b24a07720da89fa389cf"
+    sha256 catalina:      "dfa6322ce7e63ce9194a42d3dc1d630572ff7d818ac21e3533017a0bcf5821b6"
+    sha256 mojave:        "e347cc9ef89cd9b1e8fea9a6c14a4693f30cd2b43ab4754c61724e229c62849c"
   end
 
   depends_on "cmake" => :build
@@ -18,7 +21,7 @@ class OpenSceneGraph < Formula
   depends_on "freetype"
   depends_on "gtkglext"
   depends_on "jpeg-turbo"
-  depends_on "sdl"
+  depends_on "sdl2"
 
   # patch necessary to ensure support for gtkglext-quartz
   # filed as an issue to the developers https://github.com/openscenegraph/OpenSceneGraph/issues/34
@@ -27,9 +30,7 @@ class OpenSceneGraph < Formula
   def install
     # Fix "fatal error: 'os/availability.h' file not found" on 10.11 and
     # "error: expected function body after function declarator" on 10.12
-    if MacOS.version == :sierra || MacOS.version == :el_capitan
-      ENV["SDKROOT"] = MacOS.sdk_path
-    end
+    ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version <= :sierra
 
     args = std_cmake_args + %w[
       -DBUILD_DOCUMENTATION=ON
@@ -37,6 +38,7 @@ class OpenSceneGraph < Formula
       -DCMAKE_DISABLE_FIND_PACKAGE_GDAL=ON
       -DCMAKE_DISABLE_FIND_PACKAGE_Jasper=ON
       -DCMAKE_DISABLE_FIND_PACKAGE_OpenEXR=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_SDL=ON
       -DCMAKE_DISABLE_FIND_PACKAGE_TIFF=ON
       -DCMAKE_CXX_FLAGS=-Wno-error=narrowing
       -DCMAKE_OSX_ARCHITECTURES=x86_64

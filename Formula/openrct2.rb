@@ -2,38 +2,40 @@ class Openrct2 < Formula
   desc "Open source re-implementation of RollerCoaster Tycoon 2"
   homepage "https://openrct2.io/"
   url "https://github.com/OpenRCT2/OpenRCT2.git",
-      :tag      => "v0.2.4",
-      :revision => "d645338752fbda54bed2cf2a4183ae8b44be6e95"
-  head "https://github.com/OpenRCT2/OpenRCT2.git", :branch => "develop"
+      tag:      "v0.3.4.1",
+      revision: "5087e77032e1342006021f680eb9cad2dc6dabef"
+  license "GPL-3.0-only"
+  head "https://github.com/OpenRCT2/OpenRCT2.git", branch: "develop"
 
   bottle do
-    cellar :any
-    sha256 "40527c354be56c735286b5a9a5e8f7d58de0d510190e0a1da09da552a44f877a" => :catalina
-    sha256 "0aba8b54f6f4d5022c3a2339bbb12dd8bd3ada5894e9bdc0a2cfeb973facca63" => :mojave
-    sha256 "6065b8ac863f4634f38d51dc444c2b68a361b1e9135b959c1be23321976f821d" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "5a75b78d7d74c9eaadff1867bededb84553bf087d1487b54f0fa1899d405b15d"
+    sha256 cellar: :any, big_sur:       "3027a49a14f166ba899a076e5b62648f49a312fb62da37e21c81959463da91c5"
+    sha256 cellar: :any, catalina:      "6991d066861d381439123af05c53baa20bf70d5e36cea9475d6aa50564e1830e"
+    sha256 cellar: :any, mojave:        "d6ee68373bc7d6d0af9a61f92b2f11ec68584fdf39a8960c53345ac3115559e7"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
+  depends_on "duktape"
   depends_on "freetype" # for sdl2_ttf
   depends_on "icu4c"
-  depends_on "jansson"
   depends_on "libpng"
   depends_on "libzip"
-  depends_on :macos => :high_sierra # "missing: Threads_FOUND" on Sierra
+  depends_on macos: :mojave # `error: call to unavailable member function 'value': introduced in macOS 10.14`
+  depends_on "nlohmann-json"
   depends_on "openssl@1.1"
   depends_on "sdl2"
   depends_on "sdl2_ttf"
   depends_on "speexdsp"
 
   resource "title-sequences" do
-    url "https://github.com/OpenRCT2/title-sequences/releases/download/v0.1.2a/title-sequence-v0.1.2a.zip"
-    sha256 "7536dbd7c8b91554306e5823128f6bb7e94862175ef09d366d25e4bce573d155"
+    url "https://github.com/OpenRCT2/title-sequences/releases/download/v0.1.2c/title-sequences.zip"
+    sha256 "5284333fa501270835b5f0cf420cb52155742335f5658d7889ea35d136b52517"
   end
 
   resource "objects" do
-    url "https://github.com/OpenRCT2/objects/releases/download/v1.0.10/objects.zip"
-    sha256 "4f261964f1c01a04b7600d3d082fb4d3d9ec0d543c4eb66a819eb2ad01417aa0"
+    url "https://github.com/OpenRCT2/objects/archive/v1.2.1.tar.gz"
+    sha256 "07816ab18779ab5988d737e1c21c25f0d95404c82919758dfdc44fdd3edf8ab5"
   end
 
   def install
@@ -42,7 +44,12 @@ class Openrct2 < Formula
     (buildpath/"data/object").install resource("objects")
 
     mkdir "build" do
-      system "cmake", "..", *std_cmake_args
+      system "cmake", "..", *std_cmake_args,
+                            "-DWITH_TESTS=OFF",
+                            "-DDOWNLOAD_TITLE_SEQUENCES=OFF",
+                            "-DDOWNLOAD_OBJECTS=OFF",
+                            "-DMACOS_USE_DEPENDENCIES=OFF",
+                            "-DDISABLE_DISCORD_RPC=ON"
       system "make", "install"
     end
 
@@ -50,7 +57,7 @@ class Openrct2 < Formula
     libexec.install bin/"openrct2"
     (bin/"openrct2").write <<~EOS
       #!/bin/bash
-      exec "#{libexec}/openrct2" "$@" "--openrct-data-path=#{pkgshare}"
+      exec "#{libexec}/openrct2" "$@" "--openrct2-data-path=#{pkgshare}"
     EOS
   end
 

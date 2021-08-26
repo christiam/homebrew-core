@@ -1,20 +1,29 @@
 class BoostBcp < Formula
   desc "Utility for extracting subsets of the Boost library"
   homepage "https://www.boost.org/doc/tools/bcp/"
-  url "https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2"
-  sha256 "59c9b274bc451cf91a9ba1dd2c7fdcaf5d60b1b3aa83f2c9fa143417cc660722"
-  head "https://github.com/boostorg/boost.git"
+  url "https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.bz2"
+  sha256 "fc9f85fc030e233142908241af7a846e60630aa7388de9a5fafb1f3a26840854"
+  license "BSL-1.0"
+  head "https://github.com/boostorg/boost.git", branch: "master"
+
+  livecheck do
+    formula "boost"
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "206a46348fb75f752b6a7166c4a549888208f62b1d57d4aedc0abacb71e51e3d" => :catalina
-    sha256 "2d4b85c52ab0dceed07984c4c6f9e35c0f7dbcbb73528a5993177c3a94457ebc" => :mojave
-    sha256 "fde3e6baae64ff2297e6babed41147071065c4ac0f37c2ea5dd6530f49865582" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "416173b54edea43357edb6fdd76cf2c89060015b889a9e1843e33e796b6a97c4"
+    sha256 cellar: :any_skip_relocation, big_sur:       "cc527cdb08563bbe1a03fd9d59085d3737ab197e753085e5b3d7c11704d7ca03"
+    sha256 cellar: :any_skip_relocation, catalina:      "5fbf373c4fb07fead636165d863be6ba56f52c929926e6e301796a1f00fca3af"
+    sha256 cellar: :any_skip_relocation, mojave:        "e483b259f0c9b6fb2fb1ff1256c3b3421d5f5c09a807819076200e114f40a0ac"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "dfa4af82624b089572d76ce463f5fc7c551bd53eeca67d4077e64bc104d28247"
   end
 
   depends_on "boost-build" => :build
+  depends_on "boost" => :test
 
   def install
+    # remove internal reference to use brewed boost-build
+    rm "boost-build.jam"
     cd "tools/bcp" do
       system "b2"
       prefix.install "../../dist/bin"
@@ -22,6 +31,6 @@ class BoostBcp < Formula
   end
 
   test do
-    system bin/"bcp", "--help"
+    system bin/"bcp", "--boost=#{Formula["boost"].opt_include}", "--scan", "./"
   end
 end

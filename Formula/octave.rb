@@ -1,19 +1,20 @@
 class Octave < Formula
   desc "High-level interpreted language for numerical computing"
   homepage "https://www.gnu.org/software/octave/index.html"
-  url "https://ftp.gnu.org/gnu/octave/octave-5.1.0.tar.xz"
-  mirror "https://ftpmirror.gnu.org/octave/octave-5.1.0.tar.xz"
-  sha256 "87b4df6dfa28b1f8028f69659f7a1cabd50adfb81e1e02212ff22c863a29454e"
-  revision 8
+  url "https://ftp.gnu.org/gnu/octave/octave-6.3.0.tar.xz"
+  mirror "https://ftpmirror.gnu.org/octave/octave-6.3.0.tar.xz"
+  sha256 "fb472cb957c748670391cbc3385ff230cf44832bc314fee359e43c69cf9da5ef"
+  license "GPL-3.0-or-later"
 
   bottle do
-    sha256 "8bb7ddaaea035b95e80ab59ffe747c04e545829bd9388ef869015f759fcd00cc" => :catalina
-    sha256 "e58308453bc7860606cf6011345300e2449e0438019a629d90aa428694549dde" => :mojave
-    sha256 "d6cd6c2d7f9cb0a396046c0a68ee9deb20b79fad44285e720a5f9cd217a32595" => :high_sierra
+    sha256 arm64_big_sur: "6bf235731cccb20bba3e58414147bcb63f3b2d3c8f33a2f05d4ca139f9b8f55a"
+    sha256 big_sur:       "ffb80919aab7e5224ae38873397a6e7d292dd3cfe6b74cba3972c7f7093ebb58"
+    sha256 catalina:      "4360b1bae83bcb42203b12e52da2ffa8c15a56df7a0a49f3cdf10e78d463c57b"
+    sha256 mojave:        "b6932ada3ff047d5911bedad215b37c191fb2018101e18c322f4288741a8625e"
   end
 
   head do
-    url "https://hg.savannah.gnu.org/hgweb/octave", :branch => "default", :using => :hg
+    url "https://hg.savannah.gnu.org/hgweb/octave", branch: "default", using: :hg
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -24,7 +25,7 @@ class Octave < Formula
 
   # Complete list of dependencies at https://wiki.octave.org/Building
   depends_on "gnu-sed" => :build # https://lists.gnu.org/archive/html/octave-maintainers/2016-09/msg00193.html
-  depends_on :java => ["1.7+", :build]
+  depends_on "openjdk" => :build
   depends_on "pkg-config" => :build
   depends_on "arpack"
   depends_on "epstool"
@@ -48,22 +49,24 @@ class Octave < Formula
   depends_on "pstoedit"
   depends_on "qhull"
   depends_on "qrupdate"
-  depends_on "qt"
+  depends_on "qscintilla2"
+  depends_on "qt@5"
   depends_on "readline"
   depends_on "suite-sparse"
   depends_on "sundials"
   depends_on "texinfo"
 
+  uses_from_macos "curl"
+
+  on_linux do
+    depends_on "autoconf"
+    depends_on "automake"
+    depends_on "mesa"
+    depends_on "mesa-glu"
+  end
+
   # Dependencies use Fortran, leading to spurious messages about GCC
   cxxstdlib_check :skip
-
-  # Octave fails to build due to error with java. See also
-  # https://github.com/Homebrew/homebrew-core/issues/39848
-  # Patch submitted upstream at: https://savannah.gnu.org/patch/index.php?9806
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/master/octave/5.1.0-java-version.patch"
-    sha256 "7ea1e9b410a759fa136d153fb8482ecfc3425a39bfe71c1e71b3ff0f7d9a0b54"
-  end
 
   def install
     # Default configuration passes all linker flags to mkoctfile, to be
@@ -78,24 +81,42 @@ class Octave < Formula
     ENV["QCOLLECTIONGENERATOR"] = "qhelpgenerator"
     # These "shouldn't" be necessary, but the build breaks without them.
     # https://savannah.gnu.org/bugs/?55883
-    ENV["QT_CPPFLAGS"]="-I#{Formula["qt"].opt_include}"
-    ENV.append "CPPFLAGS", "-I#{Formula["qt"].opt_include}"
-    ENV["QT_LDFLAGS"]="-F#{Formula["qt"].opt_lib}"
-    ENV.append "LDFLAGS", "-F#{Formula["qt"].opt_lib}"
+    ENV["QT_CPPFLAGS"]="-I#{Formula["qt@5"].opt_include}"
+    ENV.append "CPPFLAGS", "-I#{Formula["qt@5"].opt_include}"
+    ENV["QT_LDFLAGS"]="-F#{Formula["qt@5"].opt_lib}"
+    ENV.append "LDFLAGS", "-F#{Formula["qt@5"].opt_lib}"
 
     system "./bootstrap" if build.head?
-    system "./configure", "--prefix=#{prefix}",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--enable-link-all-dependencies",
-                          "--enable-shared",
-                          "--disable-static",
-                          "--with-hdf5-includedir=#{Formula["hdf5"].opt_include}",
-                          "--with-hdf5-libdir=#{Formula["hdf5"].opt_lib}",
-                          "--with-x=no",
-                          "--with-blas=-L#{Formula["openblas"].opt_lib} -lopenblas",
-                          "--with-portaudio",
-                          "--with-sndfile"
+    args = ["--prefix=#{prefix}",
+            "--disable-dependency-tracking",
+            "--disable-silent-rules",
+            "--enable-link-all-dependencies",
+            "--enable-shared",
+            "--disable-static",
+            "--with-hdf5-includedir=#{Formula["hdf5"].opt_include}",
+            "--with-hdf5-libdir=#{Formula["hdf5"].opt_lib}",
+            "--with-java-homedir=#{Formula["openjdk"].opt_prefix}",
+            "--with-x=no",
+            "--with-blas=-L#{Formula["openblas"].opt_lib} -lopenblas",
+            "--with-portaudio",
+            "--with-sndfile"]
+
+    on_linux do
+      # Explicitly specify aclocal and automake without versions
+      args << "ACLOCAL=aclocal"
+      args << "AUTOMAKE=automake"
+
+      # Mesa OpenGL location must be supplied by LDFLAGS on Linux
+      args << "LDFLAGS=-L#{Formula["mesa"].opt_lib} -L#{Formula["mesa-glu"].opt_lib}"
+
+      # Docs building is broken on Linux
+      args << "--disable-docs"
+
+      # Need to regenerate aclocal.m4 so that it will work with brewed automake
+      system "aclocal"
+    end
+
+    system "./configure", *args
     system "make", "all"
 
     # Avoid revision bumps whenever fftw's, gcc's or OpenBLAS' Cellar paths change

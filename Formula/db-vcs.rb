@@ -1,10 +1,13 @@
 class DbVcs < Formula
   desc "Version control for MySQL databases"
   homepage "https://github.com/infostreams/db"
-  url "https://github.com/infostreams/db/archive/1.0.tar.gz"
-  sha256 "a21f717ead07058242f28d90bd3d56f478f05039f0628e8f177c4383c36efefd"
+  url "https://github.com/infostreams/db/archive/1.1.tar.gz"
+  sha256 "90f07c13c388896ba02032544820f8ff3a23e6f9dc1e320a1a653dd77e032ee7"
+  license "MIT"
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "53008992773bfb7066685792607092c21fd06f5e66818afb7d3c9bd60dfd0557"
+  end
 
   def install
     libexec.install "db"

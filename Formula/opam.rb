@@ -1,19 +1,23 @@
 class Opam < Formula
-  desc "The OCaml package manager"
+  desc "OCaml package manager"
   homepage "https://opam.ocaml.org"
-  url "https://github.com/ocaml/opam/releases/download/2.0.5/opam-full-2.0.5.tar.gz"
-  sha256 "776c7e64d6e24c2ef1efd1e6a71d36e007645efae94eaf860c05c1929effc76f"
+  url "https://github.com/ocaml/opam/releases/download/2.1.0/opam-full-2.1.0.tar.gz"
+  sha256 "6102131a9b65536b713efba7f5498acb3802ae15fec3171cc2c98427cfc3926f"
+  license "LGPL-2.1-only"
   head "https://github.com/ocaml/opam.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "2eaa945aa00834374c7170da065b5d2c15a5df25130bb9b336fb17097f7000cd" => :catalina
-    sha256 "73d4d1936a7862127e77efa45a07af5e4b49ed00227e9455671ca2a87a32875c" => :mojave
-    sha256 "8799c5a87853dba2a74a3cbc58a7ecb39197ade8372726d044f617ca6bf55a33" => :high_sierra
-    sha256 "2e81e914a8259d6f97e808d4def682154d45545efc6efc67c2c344dc5e97e1d8" => :sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "123479f1d339a12438b69a3989fe7a071afb27199e0fc43c03dd48a931a16d87"
+    sha256 cellar: :any_skip_relocation, big_sur:       "c7f5790fcae38c515645b01d5220bc72a871d0757826b0b0ef00f15394779edc"
+    sha256 cellar: :any_skip_relocation, catalina:      "de234d72d049fa6451a558ea84dec3361a16119a7df5184d9d683e59ddd1ca21"
+    sha256 cellar: :any_skip_relocation, mojave:        "d3c5435c5af63e34d72b9fc8bc73087c973f4dc8273d8f5f6567608fea1a4284"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "b4a7773d2d7d44a490c0c98e92e4c05f6605ca8e7ecda516e879be221abcf3f1"
   end
 
   depends_on "ocaml" => [:build, :test]
+  depends_on "gpatch"
+
+  uses_from_macos "unzip"
 
   def install
     ENV.deparallelize
@@ -21,19 +25,19 @@ class Opam < Formula
     system "./configure", "--prefix=#{prefix}", "--mandir=#{man}"
     system "make", "lib-ext"
     system "make"
-    system "make", "man"
     system "make", "install"
 
-    bash_completion.install "src/state/shellscripts/complete.sh"
+    bash_completion.install "src/state/shellscripts/complete.sh" => "opam"
     zsh_completion.install "src/state/shellscripts/complete.zsh" => "_opam"
   end
 
-  def caveats; <<~EOS
-    OPAM uses ~/.opam by default for its package database, so you need to
-    initialize it first by running:
+  def caveats
+    <<~EOS
+      OPAM uses ~/.opam by default for its package database, so you need to
+      initialize it first by running:
 
-    $ opam init
-  EOS
+      $ opam init
+    EOS
   end
 
   test do

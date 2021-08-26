@@ -1,16 +1,17 @@
 class Alp < Formula
   desc "Access Log Profiler"
   homepage "https://github.com/tkuchiki/alp"
-  url "https://github.com/tkuchiki/alp/archive/v1.0.2.tar.gz"
-  sha256 "b2a0cb6b836d0f2ab9b4a53bf2ac996e18645c1332a4f0c824b6a5e12925913e"
-  head "https://github.com/tkuchiki/alp.git"
+  url "https://github.com/tkuchiki/alp/archive/v1.0.8.tar.gz"
+  sha256 "66befab0cd827fed8eeb06e18b0b0e1d4551cf7311ac8c5e15fcabf272a44c99"
+  license "MIT"
+  head "https://github.com/tkuchiki/alp.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "490aef4ecbd2150797258cd243da08323f3ac7fca4fb140fba7dd1dc4c0e9226" => :catalina
-    sha256 "d1ce608565f0fa3995de0f21b3b3aa5cc90b8c6678704ffe8bf23f56feb9706b" => :mojave
-    sha256 "8c560595fc185ffa578e527f3736b0429d35fce177ce86ab20d25f7f1d0a791e" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "74d8563f23cfd9716a9f7b1b5ecc667f92acb7817ea881efeb0037c9ccaccef8"
+    sha256 cellar: :any_skip_relocation, big_sur:       "909d30918325d04599ffe05aecd4b12dc3b4287367f392abc645329cdc0f57f9"
+    sha256 cellar: :any_skip_relocation, catalina:      "3b5ed01c4396d31b9873f39339a6efc9663ee2968db6dbbab777f05ecc7cda84"
+    sha256 cellar: :any_skip_relocation, mojave:        "03a94a2058cd2e4e889fd9064949d0164ade83cc1c6dba2ae5d0804c9e8232c5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "b304ced670dd2ff7ca0fc39fa82627aee5144d1375fcb9371d492cbd7641fb47"
   end
 
   depends_on "go" => :build

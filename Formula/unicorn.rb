@@ -1,20 +1,20 @@
 class Unicorn < Formula
   desc "Lightweight multi-architecture CPU emulation framework"
   homepage "https://www.unicorn-engine.org/"
-  url "https://github.com/unicorn-engine/unicorn/archive/1.0.1.tar.gz"
-  sha256 "3a6a4f2b8c405ab009040ca43af8e4aa10ebe44d9c8b336aa36dc35df955017c"
-  head "https://github.com/unicorn-engine/unicorn.git"
+  url "https://github.com/unicorn-engine/unicorn/archive/1.0.3.tar.gz"
+  sha256 "64fba177dec64baf3f11c046fbb70e91483e029793ec6a3e43b028ef14dc0d65"
+  head "https://github.com/unicorn-engine/unicorn.git", branch: "master"
 
   bottle do
-    cellar :any
     rebuild 1
-    sha256 "3804516889997cf2eceb92e6baf8667396ec83f7a66c1c362925e0a11f9004cc" => :catalina
-    sha256 "78a5143347e18c673a63dc4b171f610499eb728836f20626bd77bc886374b853" => :mojave
-    sha256 "c44cbb02b8073ca0e70f13cf16272964ab52a8b19a20da07dcfd76c6f15585dd" => :high_sierra
-    sha256 "8c134f4b88d63da3908d419dd29118d6ada4489091cd53e81cc9a72f28a9760b" => :sierra
+    sha256 cellar: :any,                 big_sur:      "8f7ec73074e986c355944923dfc2c4828b9a545e66f9112e92b20cd11cf3b1b4"
+    sha256 cellar: :any,                 catalina:     "11c4212e8e10b202eb2b9c4d4704d9c18619523d1ed31b98eb7eb5288a4ea7c1"
+    sha256 cellar: :any,                 mojave:       "3725cd02674803b1491af58d6552a842af5ed8e1bd16b2144dd1e971748502aa"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "0e3136c1be33d317e52a1689c24ad785617a3102dcd69052fe0a43e63638c7cc"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "python@3.9" => [:build, :test]
 
   def install
     ENV["PREFIX"] = prefix
@@ -25,7 +25,7 @@ class Unicorn < Formula
     system "make", "install"
 
     cd "bindings/python" do
-      system "python", *Language::Python.setup_install_args(prefix)
+      system Formula["python@3.9"].opt_bin/"python3", *Language::Python.setup_install_args(prefix)
     end
   end
 
@@ -74,9 +74,9 @@ class Unicorn < Formula
       }
     EOS
     system ENV.cc, "-o", testpath/"test1", testpath/"test1.c",
-      "-lpthread", "-lm", "-L#{lib}", "-lunicorn"
+                   "-pthread", "-lpthread", "-lm", "-L#{lib}", "-lunicorn"
     system testpath/"test1"
 
-    system "python", "-c", "import unicorn; print(unicorn.__version__)"
+    system Formula["python@3.9"].opt_bin/"python3", "-c", "import unicorn; print(unicorn.__version__)"
   end
 end

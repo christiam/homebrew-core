@@ -1,49 +1,70 @@
 class Gromacs < Formula
   desc "Versatile package for molecular dynamics calculations"
-  homepage "http://www.gromacs.org/"
-  url "https://ftp.gromacs.org/pub/gromacs/gromacs-2019.3.tar.gz"
-  sha256 "4211a598bf3b7aca2b14ad991448947da9032566f13239b1a05a2d4824357573"
+  homepage "https://www.gromacs.org/"
+  url "https://ftp.gromacs.org/pub/gromacs/gromacs-2021.3.tar.gz"
+  sha256 "e109856ec444768dfbde41f3059e3123abdb8fe56ca33b1a83f31ed4575a1cc6"
+  license "LGPL-2.1-or-later"
+
+  livecheck do
+    url "https://ftp.gromacs.org/pub/gromacs/"
+    regex(/href=.*?gromacs[._-]v?(\d+(?:\.\d+)*)\.t/i)
+  end
 
   bottle do
-    sha256 "6b5ebbac12d72bce693c4fa1c424cdc884afefa4ba11264922be52c2974f69fe" => :catalina
-    sha256 "6f423386809bbdb219b41c619b8a7b241e36e7a4881c155cd6deecb78fe2edfa" => :mojave
-    sha256 "582b641126dcc98177587a85a0a75d953c51ae981976a895e243b33fe6e3e089" => :high_sierra
-    sha256 "08c431f5f67fe71aaf24fdd501ba0d6e2816b273b18a08fa00079a0eeac6d948" => :sierra
+    sha256 arm64_big_sur: "b3c9be4744dbe1768f69f04aa02efccdfc947bb2441b0a17d551cb62ce12e06c"
+    sha256 big_sur:       "821b3771187dd1d56bce2a23e7a5c93a141b423de5776737a9c0969d041fed73"
+    sha256 catalina:      "fecdced4dbd979a8216425314de6d9d3eccd2a1de8113a6fc95dc71a0580e21a"
+    sha256 mojave:        "87a22dd24d97b8b4b3d3c13c5e37bce8c60b3deee4a8e28325161843ac03e0f7"
+    sha256 x86_64_linux:  "6e6e605e063d99f7335c4ca78e601e0d2008336b3f7bad891b0ca70bcf1beb2c"
   end
 
   depends_on "cmake" => :build
   depends_on "fftw"
   depends_on "gcc" # for OpenMP
+  depends_on "openblas"
+
+  fails_with :clang
+  fails_with gcc: "5"
+  fails_with gcc: "6"
 
   def install
     # Non-executable GMXRC files should be installed in DATADIR
     inreplace "scripts/CMakeLists.txt", "CMAKE_INSTALL_BINDIR",
                                         "CMAKE_INSTALL_DATADIR"
-    # fix an error on detecting CPU. see https://redmine.gromacs.org/issues/2927
-    inreplace "cmake/gmxDetectCpu.cmake",
-              "\"${GCC_INLINE_ASM_DEFINE} -I${PROJECT_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS} -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE}\")",
-              "${GCC_INLINE_ASM_DEFINE} -I${PROJECT_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS} -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE})"
 
-    args = std_cmake_args + %w[
-      -DCMAKE_C_COMPILER=gcc-9
-      -DCMAKE_CXX_COMPILER=g++-9
-    ]
+    # Avoid superenv shim reference
+    gcc = Formula["gcc"]
+    cc = gcc.opt_bin/"gcc-#{gcc.any_installed_version.major}"
+    cxx = gcc.opt_bin/"g++-#{gcc.any_installed_version.major}"
+    inreplace "src/gromacs/gromacs-toolchain.cmake.cmakein" do |s|
+      s.gsub! "@CMAKE_LINKER@", "/usr/bin/ld"
+      s.gsub! "@CMAKE_C_COMPILER@", cc
+      s.gsub! "@CMAKE_CXX_COMPILER@", cxx
+    end
+
+    inreplace "src/buildinfo.h.cmakein" do |s|
+      s.gsub! "@BUILD_C_COMPILER@", cc
+      s.gsub! "@BUILD_CXX_COMPILER@", cxx
+    end
+
+    inreplace "src/gromacs/gromacs-config.cmake.cmakein", "@GROMACS_CXX_COMPILER@", cxx
 
     mkdir "build" do
-      system "cmake", "..", *args
+      system "cmake", "..", *std_cmake_args, "-DGROMACS_CXX_COMPILER=#{cxx}"
       system "make", "install"
     end
 
     bash_completion.install "build/scripts/GMXRC" => "gromacs-completion.bash"
-    bash_completion.install "#{bin}/gmx-completion-gmx.bash" => "gmx-completion-gmx.bash"
-    bash_completion.install "#{bin}/gmx-completion.bash" => "gmx-completion.bash"
+    bash_completion.install bin/"gmx-completion-gmx.bash" => "gmx-completion-gmx.bash"
+    bash_completion.install bin/"gmx-completion.bash" => "gmx-completion.bash"
     zsh_completion.install "build/scripts/GMXRC.zsh" => "_gromacs"
   end
 
-  def caveats; <<~EOS
-    GMXRC and other scripts installed to:
-      #{HOMEBREW_PREFIX}/share/gromacs
-  EOS
+  def caveats
+    <<~EOS
+      GMXRC and other scripts installed to:
+        #{HOMEBREW_PREFIX}/share/gromacs
+    EOS
   end
 
   test do

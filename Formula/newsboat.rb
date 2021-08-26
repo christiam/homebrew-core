@@ -1,26 +1,32 @@
 class Newsboat < Formula
   desc "RSS/Atom feed reader for text terminals"
   homepage "https://newsboat.org/"
-  url "https://newsboat.org/releases/2.18/newsboat-2.18.tar.xz"
-  sha256 "f23932c0226ec3f69eac7668da444e73175048498e15e9d773451648b2cba4b0"
+  url "https://newsboat.org/releases/2.24/newsboat-2.24.tar.xz"
+  sha256 "62420688cca25618859548d10ff6df9ac75b9cf766699f37edd3e324d67c6ffb"
+  license "MIT"
+  revision 1
   head "https://github.com/newsboat/newsboat.git"
 
   bottle do
-    sha256 "3ebdaac8a35ae290af7adffe737bec71f1ca4d96d58acc352a6d926eab3dc1ed" => :catalina
-    sha256 "3b5461262a95b3c29cd7fce17c0c7db2116dccdcbb9bdd4e9e912b5890279737" => :mojave
-    sha256 "9e3ce4ad4a7230aa6356651c7dca731d56366bba7ba42e73eeb8d3dfdbf8ca45" => :high_sierra
+    sha256 arm64_big_sur: "56dfe1b2c6f47820764638c40cd9551b3c251a07baba3834479ae2fde9cbfd53"
+    sha256 big_sur:       "dd32e75e07680644d5cef9736e77366f3373b69f5dfa471fc1890df98988862b"
+    sha256 catalina:      "409cf4cb21d90f201508b289336782010a51bcaf024e4a127b3163c12fc392dd"
+    sha256 mojave:        "c90b373c50ff225cd8e78a68fdf966227b9ac29b980974f239095071a1040548"
+    sha256 x86_64_linux:  "f990df0f3f7abca0a2a440940593f0f6935c72d98a356a52a2217a05ec58388a"
   end
 
-  depends_on "asciidoc" => :build
-  depends_on "docbook-xsl" => :build
+  depends_on "asciidoctor" => :build
   depends_on "pkg-config" => :build
   depends_on "rust" => :build
+  depends_on "xz" => :build
   depends_on "gettext"
   depends_on "json-c"
   depends_on "libstfl"
+
   uses_from_macos "curl"
   uses_from_macos "libxml2"
   uses_from_macos "libxslt"
+  uses_from_macos "sqlite"
 
   def install
     gettext = Formula["gettext"]
@@ -35,6 +41,6 @@ class Newsboat < Formula
 
   test do
     (testpath/"urls.txt").write "https://github.com/blog/subscribe"
-    assert_match /newsboat - Exported Feeds/m, shell_output("LC_ALL=C #{bin}/newsboat -e -u urls.txt")
+    assert_match "Newsboat - Exported Feeds", shell_output("LC_ALL=C #{bin}/newsboat -e -u urls.txt")
   end
 end

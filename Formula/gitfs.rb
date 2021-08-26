@@ -5,22 +5,36 @@ class Gitfs < Formula
   homepage "https://www.presslabs.com/gitfs"
   url "https://github.com/presslabs/gitfs/archive/0.5.2.tar.gz"
   sha256 "921e24311e3b8ea3a5448d698a11a747618ee8dd62d5d43a85801de0b111cbf3"
+  license "Apache-2.0"
+  revision 5
   head "https://github.com/presslabs/gitfs.git"
 
   bottle do
-    cellar :any
-    sha256 "46b9f946ecb8009dc86e20230314c21d17f270f516410094a4efe7e4bd49125b" => :catalina
-    sha256 "b3c0185053026036e2cb08fb9eeacc896a690f3b86a6fb9e319fa72213c215eb" => :mojave
-    sha256 "e15109dbbfebea22a1f90b35ad2a93769cf581eda07d29c7cc7eb8c8b6982b43" => :high_sierra
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "638b675aefc6f064d3549d78273b4d28a9b6e2fd6ce1ed5e5c8fe32c1cc0fe0e"
   end
 
   depends_on "libgit2"
-  depends_on :osxfuse
-  depends_on "python"
+  depends_on "python@3.9"
+
+  uses_from_macos "libffi"
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "libfuse"
+  end
 
   resource "atomiclong" do
     url "https://files.pythonhosted.org/packages/86/8c/70aea8215c6ab990f2d91e7ec171787a41b7fbc83df32a067ba5d7f3324f/atomiclong-0.1.1.tar.gz"
     sha256 "cb1378c4cd676d6f243641c50e277504abf45f70f1ea76e446efcdbb69624bbe"
+  end
+
+  resource "cached-property" do
+    url "https://files.pythonhosted.org/packages/57/8e/0698e10350a57d46b3bcfe8eff1d4181642fd1724073336079cb13c5cf7f/cached-property-1.5.1.tar.gz"
+    sha256 "9217a59f14a5682da7c4b8829deadbfc194ac22e9908ccf7c8820234e80a1504"
   end
 
   resource "cffi" do
@@ -34,8 +48,8 @@ class Gitfs < Formula
   end
 
   resource "pygit2" do
-    url "https://files.pythonhosted.org/packages/4c/64/88c2a4eb2d22ca1982b364f41ff5da42d61de791d7eb68140e7f8f7eb721/pygit2-0.28.2.tar.gz"
-    sha256 "4d8c3fbbf2e5793a9984681a94e6ac2f1bc91a92cbac762dbdfbea296b917f86"
+    url "https://files.pythonhosted.org/packages/6b/23/a8c5b726a58282fe2cadcc63faaddd4be147c3c8e0bd38b233114adf98fd/pygit2-1.6.1.tar.gz"
+    sha256 "c3303776f774d3e0115c1c4f6e1fc35470d15f113a7ae9401a0b90acfa1661ac"
   end
 
   resource "six" do
@@ -57,17 +71,26 @@ class Gitfs < Formula
     virtualenv_install_with_resources
   end
 
-  def caveats; <<~EOS
-    gitfs clones repos in /var/lib/gitfs. You can either create it with
-    sudo mkdir -m 1777 /var/lib/gitfs or use another folder with the
-    repo_path argument.
+  def caveats
+    on_macos do
+      return <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
 
-    Also make sure OSXFUSE is properly installed by running brew info osxfuse.
-  EOS
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
+
+    <<~EOS
+      gitfs clones repos in /var/lib/gitfs. You can either create it with
+      sudo mkdir -m 1777 /var/lib/gitfs or use another folder with the
+      repo_path argument.
+    EOS
   end
 
   test do
-    xy = Language::Python.major_minor_version "python3"
+    xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
     ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python#{xy}/site-packages"
 
     (testpath/"test.py").write <<~EOS
@@ -76,10 +99,10 @@ class Gitfs < Formula
       pygit2.init_repository('testing/.git', True)
     EOS
 
-    system "python3", "test.py"
+    system Formula["python@3.9"].opt_bin/"python3", "test.py"
     assert_predicate testpath/"testing/.git/config", :exist?
     cd "testing" do
-      system "git", "remote", "add", "homebrew", "https://github.com/Homebrew/homebrew.git"
+      system "git", "remote", "add", "homebrew", "https://github.com/Homebrew/homebrew-core.git"
       assert_match "homebrew", shell_output("git remote")
     end
   end

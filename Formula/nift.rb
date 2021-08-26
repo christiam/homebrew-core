@@ -1,25 +1,29 @@
 class Nift < Formula
   desc "Cross-platform open source framework for managing and generating websites"
-  homepage "https://nift.cc/"
-  url "https://github.com/nifty-site-manager/nsm/archive/v2.0.1.tar.gz"
-  sha256 "66aad5d280b7d7ea8a5ea5b6bee24a69883218df2bc455e7ffb60343b77d4e4a"
+  homepage "https://nift.dev/"
+  url "https://github.com/nifty-site-manager/nsm/archive/v2.4.12.tar.gz"
+  sha256 "7a28987114cd5e4717b31a96840c0be505d58a07e20dcf26b25add7dbdf2668b"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "01710999e940f3da693e1039a0a541221346b6844ead58187ad25efa92f10764" => :catalina
-    sha256 "44938b7a90af33c1e3da77774e94b20fdb99eab140fbd65138dab443c237bf72" => :mojave
-    sha256 "34fcba14bc3de8dace551232b3d3e16fde9881d382b0fe167aacec79e12e39b9" => :high_sierra
+    sha256 cellar: :any,                 big_sur:      "643dbd50106a96d8af8e1071c49fb6c41522f7d3384d0e438810d48e5503c7ab"
+    sha256 cellar: :any,                 catalina:     "dbf48067fac536bfe804c35c19c6198bae0c0d29107be3e4512d31a37485fd96"
+    sha256 cellar: :any,                 mojave:       "d51812440b4e4b8df56ee07b377e2d2a4cee7d84233377218e9ed3fc5e9e68e1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "e8fed0b8f27357e6414545556caf0c1bffd34273b5966e17c8ef4f554eb2c4a8"
   end
 
+  depends_on "luajit-openresty"
+
   def install
-    system "make"
+    inreplace "Lua.h", "/usr/local/include", Formula["luajit-openresty"].opt_include
+    system "make", "BUNDLED=0", "LUAJIT_VERSION=2.1"
     system "make", "install", "PREFIX=#{prefix}"
   end
 
   test do
     mkdir "empty" do
-      system "#{bin}/nsm", "init-html"
-      assert_predicate testpath/"empty/site/index.html", :exist?
+      system "#{bin}/nsm", "init", ".html"
+      assert_predicate testpath/"empty/output/index.html", :exist?
     end
   end
 end

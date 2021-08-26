@@ -1,29 +1,42 @@
 class Stgit < Formula
-  desc "Push/pop utility built on top of Git"
-  homepage "https://github.com/ctmarinas/stgit"
-  url "https://github.com/ctmarinas/stgit/archive/v0.21.tar.gz"
-  sha256 "ba1ccbbc15beccc4648ae3b3a198693be7e6b1b1e330f45605654d56095dac0d"
-  head "https://github.com/ctmarinas/stgit.git"
+  desc "Manage Git commits as a stack of patches"
+  homepage "https://stacked-git.github.io"
+  url "https://github.com/stacked-git/stgit/releases/download/v1.1/stgit-1.1.tar.gz"
+  sha256 "fc9674943c8e5534122ad96646078b4f07b7b69fc202b57eaa9b430ee13f0d9b"
+  license "GPL-2.0-only"
+  head "https://github.com/stacked-git/stgit.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "736d0fb7ba2e2f09acb9f3c12e7a232d975c1f20306b1d6b56dbc8fa9622bb0e" => :catalina
-    sha256 "a8c5a52941bb5c524f97bddf295dbf65b79ec74b4ec5a0d0ebcdb25429e1e03d" => :mojave
-    sha256 "a8c5a52941bb5c524f97bddf295dbf65b79ec74b4ec5a0d0ebcdb25429e1e03d" => :high_sierra
+    sha256 cellar: :any_skip_relocation, all: "227e183a55224f7d8386a57330c37d7e3ef0d472b35603ed42b78ed04142dffa"
   end
 
+  depends_on "asciidoc" => :build
+  depends_on "xmlto" => :build
+  depends_on "python@3.9"
+
   def install
-    ENV["PYTHON"] = "python" # overrides 'python2' built into makefile
+    ENV["PYTHON"] = Formula["python@3.9"].opt_bin/"python3"
+    ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
     system "make", "prefix=#{prefix}", "all"
     system "make", "prefix=#{prefix}", "install"
+    system "make", "prefix=#{prefix}", "install-doc"
+    bash_completion.install "completion/stgit.bash"
+    fish_completion.install "completion/stg.fish"
+    zsh_completion.install "completion/stgit.zsh" => "_stgit"
   end
 
   test do
     system "git", "init"
+    system "git", "config", "user.name", "BrewTestBot"
+    system "git", "config", "user.email", "brew@test.bot"
     (testpath/"test").write "test"
     system "git", "add", "test"
     system "git", "commit", "--message", "Initial commit", "test"
+    system "#{bin}/stg", "--version"
     system "#{bin}/stg", "init"
+    system "#{bin}/stg", "new", "-m", "patch0"
+    (testpath/"test").append_lines "a change"
+    system "#{bin}/stg", "refresh"
     system "#{bin}/stg", "log"
   end
 end

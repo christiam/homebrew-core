@@ -1,13 +1,22 @@
 class Netdata < Formula
-  desc "Distributed real-time performance and health monitoring"
-  homepage "https://my-netdata.io/"
-  url "https://github.com/netdata/netdata/releases/download/v1.19.0/netdata-v1.19.0.tar.gz"
-  sha256 "36c46bd95c0d8138e2f1a886c9b9fb6a9fd22fbf9d3097420c10b868ed23e355"
+  desc "Diagnose infrastructure problems with metrics, visualizations & alarms"
+  homepage "https://netdata.cloud/"
+  url "https://github.com/netdata/netdata/releases/download/v1.29.3/netdata-v1.29.3.tar.gz"
+  sha256 "eeba8b18519a9123a3cc8b450dcd042e23a3b145a78a7017a14c47ed36d923df"
+  license "GPL-3.0-or-later"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    sha256 "29e1693f268bc6ecac4cf3c0deb76fbce0d5d5933d820867f29e5c77b80046a8" => :catalina
-    sha256 "71485353950345da2cf50e59ae04d4da2204edfb2d7017be8858a3e3f89748c8" => :mojave
-    sha256 "f480bf04c2425a0cab26219fab8ea21c5d02ddfaf06e737e1e72d13bc47bfee9" => :high_sierra
+    rebuild 1
+    sha256 arm64_big_sur: "96e5940c2b39c8d0cf4c3d6400f388d17c4d8a2f6a7feeca6937ed2270cdcf8b"
+    sha256 big_sur:       "d3bad874d783b3b59407768d7ef796c4a596e89aca6aaa7ea66194c7b809a193"
+    sha256 catalina:      "f4c04a549cdacdfce6549bae882621cf91c08c3aeb974947ed61724fc9feb057"
+    sha256 mojave:        "52acdf9ac5b1986cdc7f02d079a74486db527e32e09036ce2505c38c85c8d125"
+    sha256 x86_64_linux:  "bd46e05291b7d286be7bc9e50ddb4a04dd162135f71708e5e4a8513996af5266"
   end
 
   depends_on "autoconf" => :build
@@ -17,6 +26,12 @@ class Netdata < Formula
   depends_on "libuv"
   depends_on "lz4"
   depends_on "openssl@1.1"
+
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "util-linux"
+  end
 
   resource "judy" do
     url "https://downloads.sourceforge.net/project/judy/judy/Judy-1.0.5/Judy-1.0.5.tar.gz"
@@ -43,18 +58,27 @@ class Netdata < Formula
     ENV.append "LDFLAGS", "-L#{judyprefix}/lib"
 
     system "autoreconf", "-ivf"
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--sysconfdir=#{etc}",
-                          "--localstatedir=#{var}",
-                          "--libexecdir=#{libexec}",
-                          "--with-math",
-                          "--with-zlib",
-                          "--enable-dbengine",
-                          "--with-user=netdata",
-                          "UUID_CFLAGS=-I/usr/include",
-                          "UUID_LIBS=-lc"
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --sysconfdir=#{etc}
+      --localstatedir=#{var}
+      --libexecdir=#{libexec}
+      --with-math
+      --with-zlib
+      --enable-dbengine
+      --with-user=netdata
+    ]
+    on_macos do
+      args << "UUID_LIBS=-lc"
+      args << "UUID_CFLAGS=-I/usr/include"
+    end
+    on_linux do
+      args << "UUID_LIBS=-luuid"
+      args << "UUID_CFLAGS=-I#{Formula["util-linux"].opt_include}"
+    end
+    system "./configure", *args
     system "make", "clean"
     system "make", "install"
 
@@ -67,37 +91,21 @@ class Netdata < Formula
       s.gsub!(/web files owner = .*/, "web files owner = #{ENV["USER"]}")
       s.gsub!(/web files group = .*/, "web files group = #{Etc.getgrgid(prefix.stat.gid).name}")
     end
+    (var/"cache/netdata/unittest-dbengine/dbengine").mkpath
+    (var/"lib/netdata/registry").mkpath
+    (var/"log/netdata").mkpath
     (var/"netdata").mkpath
   end
 
-  plist_options :manual => "#{HOMEBREW_PREFIX}/sbin/netdata -D"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_sbin}/netdata</string>
-            <string>-D</string>
-        </array>
-        <key>WorkingDirectory</key>
-        <string>#{var}</string>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_sbin/"netdata", "-D"]
+    working_dir var
   end
 
   test do
     system "#{sbin}/netdata", "-W", "set", "registry", "netdata unique id file",
                               "#{testpath}/netdata.unittest.unique.id",
                               "-W", "set", "registry", "netdata management api key file",
-                              "#{testpath}/netdata.api.key",
-                              "-W", "unittest"
+                              "#{testpath}/netdata.api.key"
   end
 end

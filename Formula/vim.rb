@@ -2,30 +2,34 @@ class Vim < Formula
   desc "Vi 'workalike' with many additional features"
   homepage "https://www.vim.org/"
   # vim should only be updated every 50 releases on multiples of 50
-  url "https://github.com/vim/vim/archive/v8.2.0100.tar.gz"
-  sha256 "13cc4d12fd6ebabc5f05a456f8f9451ae591a3473b87fda1d3a4f530123ae3d7"
-  head "https://github.com/vim/vim.git"
+  url "https://github.com/vim/vim/archive/v8.2.3350.tar.gz"
+  sha256 "f705470b5c95a2c02f96344d6b3c570f8f0eee23893b9118370cb7812815f9ce"
+  license "Vim"
+  head "https://github.com/vim/vim.git", branch: "master"
 
   bottle do
-    sha256 "d97a2167400c6b767082eee3e74963ecfe52a9db4af209795ecdab8e0f1a6fd4" => :catalina
-    sha256 "c9d5b4382dc93c7bcd9bf70db70843a22c1a1c2f94ec89bf6da0ade006c59afb" => :mojave
-    sha256 "8ab12f766c03612a9fbe23ed245ffb1dcb484e53cbef15e7a157fb6596eedb8a" => :high_sierra
+    sha256 arm64_big_sur: "5c67e5167efd0fea36b3f99cdf8fe149a9834496d15c116620be9e3b8468da54"
+    sha256 big_sur:       "556a574a53633a0ba4d7dfbe36856590227504d185b0225446cd6d4845314325"
+    sha256 catalina:      "3341d122c9cde85167ea6e1257a13e52679fb4726a40c707c166f527229874e1"
+    sha256 mojave:        "12de00eaf17ad46c900b694de20dfae5319b2c95fbb051120fe0c394ef31a1fb"
+    sha256 x86_64_linux:  "c0980c4674c4a6cffd4d464befdfd6c90402b46cf2959fa99e35d2523deaa399"
   end
 
   depends_on "gettext"
   depends_on "lua"
+  depends_on "ncurses"
   depends_on "perl"
-  depends_on "python"
+  depends_on "python@3.9"
   depends_on "ruby"
 
   conflicts_with "ex-vi",
-    :because => "vim and ex-vi both install bin/ex and bin/view"
+    because: "vim and ex-vi both install bin/ex and bin/view"
 
   conflicts_with "macvim",
-    :because => "vim and macvim both install vi* binaries"
+    because: "vim and macvim both install vi* binaries"
 
   def install
-    ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
+    ENV.prepend_path "PATH", Formula["python@3.9"].opt_libexec/"bin"
 
     # https://github.com/Homebrew/homebrew-core/pull/1046
     ENV.delete("SDKROOT")
@@ -43,9 +47,9 @@ class Vim < Formula
                           "--mandir=#{man}",
                           "--enable-multibyte",
                           "--with-tlib=ncurses",
+                          "--with-compiledby=Homebrew",
                           "--enable-cscope",
                           "--enable-terminal",
-                          "--with-compiledby=Homebrew",
                           "--enable-perlinterp",
                           "--enable-rubyinterp",
                           "--enable-python3interp",

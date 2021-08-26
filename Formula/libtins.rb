@@ -1,26 +1,34 @@
 class Libtins < Formula
   desc "C++ network packet sniffing and crafting library"
   homepage "https://libtins.github.io/"
-  url "https://github.com/mfontanini/libtins/archive/v4.2.tar.gz"
-  sha256 "a9fed73e13f06b06a4857d342bb30815fa8c359d00bd69547e567eecbbb4c3a1"
-  revision 1
+  url "https://github.com/mfontanini/libtins/archive/v4.3.tar.gz"
+  sha256 "c70bce5a41a27258bf0e3ad535d8238fb747d909a4b87ea14620f25dd65828fd"
+  license "BSD-2-Clause"
   head "https://github.com/mfontanini/libtins.git"
 
   bottle do
-    cellar :any
-    sha256 "3f7acd9f9ad201779e53014a1f234fe2620bcc66715bc691adae0ec05ce7922a" => :catalina
-    sha256 "024927515d79136857d24cde994b1165813a6924163dec87e1171dcf1088431f" => :mojave
-    sha256 "acd621b885b5d2e090e2065733cea3e4dcb3c635c42e02c1fc8c0a44148777d0" => :high_sierra
-    sha256 "9709befe28f8aeb4052be1304fe642f2d10701a0ef1ac11392239c4081b0e424" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "67015c4202420ae239e94a7c1df5be67af65f5a717a965f581202557df639e04"
+    sha256 cellar: :any,                 big_sur:       "fbde141533f922dd195e69f432fef3d8fc3fa3234de841ae832e1513427ca528"
+    sha256 cellar: :any,                 catalina:      "698edf1fd2794c4bf81e1debcddadf1fcad906f98cde53c7240705578ec3a584"
+    sha256 cellar: :any,                 mojave:        "0cc57b006a581a0da50ef3b365f1cbd292e9ae054a552751cc7af3d93860ebce"
+    sha256 cellar: :any,                 high_sierra:   "0a15741675e5c3f65f98fd89a25f0a1167294b95ba596620b63a45ad71dedea8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "5d479472d9c8f7e3c5b0492e99b0682829bd6033c34e7817c571413760f7dce8"
   end
 
   depends_on "cmake" => :build
   depends_on "openssl@1.1"
 
+  uses_from_macos "libpcap"
+
   def install
-    system "cmake", ".", *std_cmake_args
-    system "make", "install"
-    doc.install "examples"
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args, "-DLIBTINS_ENABLE_CXX11=1"
+      system "make", "install"
+      doc.install "examples"
+    end
+
+    # Clean up the build file garbage that has been installed.
+    rm_r Dir[share/"doc/libtins/**/CMakeFiles/"]
   end
 
   test do
@@ -30,6 +38,6 @@ class Libtins < Formula
         Tins::Sniffer sniffer("en0");
       }
     EOS
-    system ENV.cxx, "test.cpp", "-L#{lib}", "-ltins", "-o", "test"
+    system ENV.cxx, "-std=c++11", "test.cpp", "-L#{lib}", "-ltins", "-o", "test"
   end
 end

@@ -1,19 +1,28 @@
 class Freetype < Formula
   desc "Software library to render fonts"
   homepage "https://www.freetype.org/"
-  url "https://downloads.sourceforge.net/project/freetype/freetype2/2.10.1/freetype-2.10.1.tar.xz"
-  mirror "https://download.savannah.gnu.org/releases/freetype/freetype-2.10.1.tar.xz"
-  sha256 "16dbfa488a21fe827dc27eaf708f42f7aa3bb997d745d31a19781628c36ba26f"
+  url "https://downloads.sourceforge.net/project/freetype/freetype2/2.11.0/freetype-2.11.0.tar.xz"
+  mirror "https://download.savannah.gnu.org/releases/freetype/freetype-2.11.0.tar.xz"
+  sha256 "8bee39bd3968c4804b70614a0a3ad597299ad0e824bc8aad5ce8aaf48067bde7"
+  license "FTL"
+
+  livecheck do
+    url :stable
+    regex(/url=.*?freetype[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "ddd686141a969caec11ea248324e3736f6db50a54673187be103dde39cb01ebf" => :catalina
-    sha256 "2f5716f987df6f45a9d66e5f9af935bbb4202fe0b9850b6b0660fd6555ba1be4" => :mojave
-    sha256 "c367032a79a287a004e29023329c74e19887b80e05c495eec44182165ecd79e0" => :high_sierra
-    sha256 "282171a01965ae9dfd2d7955459a7285ca3a85f16504133e5fa46c72f682c14f" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "e9bcfa10ec1ce289fd5fb38228918e83ec28c5aa8dd25d7b543a8db6c0da0e39"
+    sha256 cellar: :any,                 big_sur:       "4e85cc5a025f1d8d9fedcb49775cfff4e1d2959bfda468445cecfc76c40edf17"
+    sha256 cellar: :any,                 catalina:      "619ef51d198b0c4451e55d02f750c0f8f41614dcf7e108904c57e9eecca2fff1"
+    sha256 cellar: :any,                 mojave:        "0ad6ce1ac305d4c8412f6c20ccdec2951fbf36eb2d971769d9a0910792001498"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "23cd32e04d63c7b1f2ac25da4e777d2813802c8cd9b527f50c595df722dd6d57"
   end
 
   depends_on "libpng"
+
+  uses_from_macos "bzip2"
+  uses_from_macos "zlib"
 
   def install
     system "./configure", "--prefix=#{prefix}",

@@ -3,53 +3,70 @@ class Pyinstaller < Formula
 
   desc "Bundle a Python application and all its dependencies"
   homepage "https://www.pyinstaller.org"
-  url "https://files.pythonhosted.org/packages/e2/c9/0b44b2ea87ba36395483a672fddd07e6a9cb2b8d3c4a28d7ae76c7e7e1e5/PyInstaller-3.5.tar.gz"
-  sha256 "ee7504022d1332a3324250faf2135ea56ac71fdb6309cff8cd235de26b1d0a96"
-
-  head "https://github.com/pyinstaller/pyinstaller.git", :branch => "develop"
+  url "https://files.pythonhosted.org/packages/a9/d9/9fdfb0ac2354d059e466d562689dbe53a23c4062019da2057f0eaed635e0/pyinstaller-4.5.1.tar.gz"
+  sha256 "30733baaf8971902286a0ddf77e5499ac5f7bf8e7c39163e83d4f8c696ef265e"
+  license "GPL-2.0-or-later"
+  head "https://github.com/pyinstaller/pyinstaller.git", branch: "develop"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "52a2ac801e06ee93c8d9a143b93fa5211505edeb836d5ccf7ea3a689df6756b4" => :catalina
-    sha256 "e24fb59052ce51b1ad9c77b2a5cb7fef1430f2c09ae85c129b00469ab4cf31c3" => :mojave
-    sha256 "45e50e7a2fdca28463bb9d5f3785fb11a62f73a9dfea88fc1e0584539b5871a1" => :high_sierra
-    sha256 "4112b5a32d0b465156e207d08f8c97512625df9e2ee3596cd27dbf8ae7a63ffd" => :sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "4272eaf2d73796e1509b1df73cd8d16b94a6355b27abac02f0ce0d17741260f4"
+    sha256 cellar: :any_skip_relocation, big_sur:       "18d32eca7f24a755e73cdc63f64f1c2bbd813ee16d91d5f883a77cad112ea3a7"
+    sha256 cellar: :any_skip_relocation, catalina:      "fcd5279e9d8fc01bdd988a3ad7ebb3bb13162f0221d1651746beb55570824c92"
+    sha256 cellar: :any_skip_relocation, mojave:        "14b0ce068eb56e05a847cc72834163072ef3da7bfdbbd517d2f82255164ed226"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "fd94131c0b3c6bc8938c00b9c0a9dd1e00a7718b3a92fde29babaf60c5f5e600"
   end
 
-  depends_on "python"
+  depends_on "python@3.9"
 
   resource "altgraph" do
-    url "https://files.pythonhosted.org/packages/da/a4/6c508ac94d7a65859a7a47e6fbde4aa6b81d0f0863aa45861241e782391c/altgraph-0.16.1.tar.gz"
-    sha256 "ddf5320017147ba7b810198e0b6619bd7b5563aa034da388cea8546b877f9b0c"
-  end
-
-  resource "altgraph" do
-    url "https://files.pythonhosted.org/packages/da/a4/6c508ac94d7a65859a7a47e6fbde4aa6b81d0f0863aa45861241e782391c/altgraph-0.16.1.tar.gz"
-    sha256 "ddf5320017147ba7b810198e0b6619bd7b5563aa034da388cea8546b877f9b0c"
+    url "https://files.pythonhosted.org/packages/22/5a/ac50b52581bbf0d8f6fd50ad77d20faac19a2263b43c60e7f3af8d1ec880/altgraph-0.17.tar.gz"
+    sha256 "1f05a47122542f97028caf78775a095fbe6a2699b5089de8477eb583167d69aa"
   end
 
   resource "macholib" do
-    url "https://files.pythonhosted.org/packages/72/60/2b22bef6edfb2864f7c0dc1d55b75e70ba1c3670899bead37e059e29b738/macholib-1.11.tar.gz"
-    sha256 "c4180ffc6f909bf8db6cd81cff4b6f601d575568f4d5dee148c830e9851eb9db"
+    url "https://files.pythonhosted.org/packages/5f/cd/045e6e025d7484eef8c534a0ffe98792fd1ea19aadc8ac048a5ed9272e9d/macholib-1.15.tar.gz"
+    sha256 "196b62c592e46f0859508a73a11eca6b082a5c8db330ba90cb56f2409e48e2d5"
   end
 
-  resource "future" do
-    url "https://files.pythonhosted.org/packages/90/52/e20466b85000a181e1e144fd8305caf2cf475e2f9674e797b222f8105f5f/future-0.17.1.tar.gz"
-    sha256 "67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
+  resource "pyinstaller-hooks-contrib" do
+    url "https://files.pythonhosted.org/packages/eb/fa/fe062e44776ab8edb4ac62daca1a02bb744ebdd556ec7a75c19c717e80b4/pyinstaller-hooks-contrib-2021.2.tar.gz"
+    sha256 "7f5d0689b30da3092149fc536a835a94045ac8c9f0e6dfb23ac171890f5ea8f2"
   end
 
-  resource "pefile" do
-    url "https://files.pythonhosted.org/packages/ed/cc/157f20038a80b6a9988abc06c11a4959be8305a0d33b6d21a134127092d4/pefile-2018.8.8.tar.gz"
-    sha256 "4c5b7e2de0c8cb6c504592167acf83115cbbde01fe4a507c16a1422850e86cd6"
-  end
+  # Work around to create native thin bootloader using `--no-universal2` flag
+  # Upstream ref: https://github.com/pyinstaller/pyinstaller/issues/6091
+  patch :DATA
 
   def install
+    cd "bootloader" do
+      system "python3", "./waf", "all", "--no-universal2", "STRIP=/usr/bin/strip"
+    end
     virtualenv_install_with_resources
   end
 
   test do
-    xy = Language::Python.major_minor_version "python3"
-    system bin/"pyinstaller", "-F", "--distpath=#{testpath}/dist", "--workpath=#{testpath}/build", libexec/"lib/python#{xy}/site-packages/easy_install.py"
+    (testpath/"easy_install.py").write <<~EOS
+      """Run the EasyInstall command"""
+
+      if __name__ == '__main__':
+          from setuptools.command.easy_install import main
+          main()
+    EOS
+    system bin/"pyinstaller", "-F", "--distpath=#{testpath}/dist", "--workpath=#{testpath}/build",
+                              "#{testpath}/easy_install.py"
     assert_predicate testpath/"dist/easy_install", :exist?
   end
 end
+
+__END__
+--- a/bootloader/wscript
++++ b/bootloader/wscript
+@@ -360,7 +360,7 @@ def set_arch_flags(ctx):
+             if ctx.options.macos_universal2:
+                 mac_arch = UNIVERSAL2_FLAGS
+             else:
+-                mac_arch = ['-arch', 'x86_64']
++                mac_arch = []
+         ctx.env.append_value('CFLAGS', mac_arch)
+         ctx.env.append_value('CXXFLAGS', mac_arch)
+         ctx.env.append_value('LINKFLAGS', mac_arch)

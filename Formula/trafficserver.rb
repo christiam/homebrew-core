@@ -1,16 +1,14 @@
 class Trafficserver < Formula
   desc "HTTP/1.1 compliant caching proxy server"
   homepage "https://trafficserver.apache.org/"
-
-  stable do
-    url "https://archive.apache.org/dist/trafficserver/trafficserver-8.0.5.tar.bz2"
-    sha256 "8ede46ef4b7961b0f53dc3418985f30569725c671ea9e6626dc8bbf0ca46544f"
-  end
+  url "https://downloads.apache.org/trafficserver/trafficserver-9.1.0.tar.bz2"
+  mirror "https://archive.apache.org/dist/trafficserver/trafficserver-9.1.0.tar.bz2"
+  sha256 "f1cb90bcf4afaba8ad1395c4d5a824b9909a5cac3abda74788540fdb48d8df21"
+  license "Apache-2.0"
 
   bottle do
-    sha256 "e6ea637eb779516b21ebae5e0df8ee10b6dfac8a0e710139ec9f5edcc4f6d6c6" => :catalina
-    sha256 "146b8cda24b90b8f8438bd8cd0684ce0324c2fc7ba18de598cc9f151e5fe59a7" => :mojave
-    sha256 "2016f7171e6633dfa7abf86833354c30b63d2517955f0e7695dd3f0bed5b99b1" => :high_sierra
+    sha256 catalina: "8eca27b1c4f7ac994d609270b426eaeb270f11fcedd450c37dcfc47a008a7fc1"
+    sha256 mojave:   "68a187aa4f2895fd19805775f874ed20ac3cfe5f37df74d30c1969429dae0d33"
   end
 
   head do
@@ -26,12 +24,14 @@ class Trafficserver < Formula
     end
   end
 
+  depends_on "pkg-config" => :build
+  depends_on "hwloc"
+  depends_on macos: :mojave # `error: call to unavailable member function 'value': introduced in macOS 10.14`
   depends_on "openssl@1.1"
   depends_on "pcre"
+  depends_on "yaml-cpp"
 
   def install
-    ENV.cxx11 if build.stable?
-
     # Per https://luajit.org/install.html: If MACOSX_DEPLOYMENT_TARGET
     # is not set then it's forced to 10.4, which breaks compile on Mojave.
     ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
@@ -42,7 +42,7 @@ class Trafficserver < Formula
       --localstatedir=#{var}
       --sysconfdir=#{etc}/trafficserver
       --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
-      --with-tcl=#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework
+      --with-yaml-cpp=#{Formula["yaml-cpp"].opt_prefix}
       --with-group=admin
       --disable-silent-rules
       --enable-experimental-plugins

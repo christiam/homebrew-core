@@ -1,16 +1,21 @@
 class GitLfs < Formula
   desc "Git extension for versioning large files"
   homepage "https://github.com/git-lfs/git-lfs"
-  url "https://github.com/git-lfs/git-lfs/releases/download/v2.9.2/git-lfs-v2.9.2.tar.gz"
-  sha256 "77358e12545415a6716b1e0228540f0e90619f1738dfe114cd3e5c30d43ffffd"
+  url "https://github.com/git-lfs/git-lfs/releases/download/v2.13.3/git-lfs-v2.13.3.tar.gz"
+  sha256 "f8bd7a06e61e47417eb54c3a0db809ea864a9322629b5544b78661edab17b950"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "584207acb926949f5c093d87d06e3e9deda2c78640041120d431f17bb5dad4c3" => :mojave
-    sha256 "b24483f15a987597f2b905b40882f3f89c69e478c01c434310d16c1145b161dd" => :high_sierra
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "def0547e1e83bda58b68b6880f3eb5a0a803df0addfb6e4915b6b76852735195"
+    sha256 cellar: :any_skip_relocation, big_sur:       "db355632f3236b7042d2900b7883edfe476d9fb467e62124bb5864ab2be88415"
+    sha256 cellar: :any_skip_relocation, catalina:      "b4c1b5d14562c7a1e0fbe210dc5e58888dff8437586ffc49425099c546a988b0"
+    sha256 cellar: :any_skip_relocation, mojave:        "0aaead90f98027ec8774eb318a58c6f5bef167342a52b115207ecb878f63e7f5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "918e279cead08a4d34efccd29eb656849b727c46b4431287b326e8f0fe92f40b"
   end
 
   depends_on "go" => :build
+  depends_on "ronn" => :build
   depends_on "ruby" => :build
 
   def install
@@ -19,12 +24,9 @@ class GitLfs < Formula
 
     (buildpath/"src/github.com/git-lfs/git-lfs").install buildpath.children
     cd "src/github.com/git-lfs/git-lfs" do
-      ENV["GEM_HOME"] = ".gem_home"
-      system "gem", "install", "ronn"
-
       system "make", "vendor"
       system "make"
-      system "make", "man", "RONN=.gem_home/bin/ronn"
+      system "make", "man", "RONN=#{Formula["ronn"].bin}/ronn"
 
       bin.install "bin/git-lfs"
       man1.install Dir["man/*.1"]
@@ -33,15 +35,16 @@ class GitLfs < Formula
     end
   end
 
-  def caveats; <<~EOS
-    Update your git config to finish installation:
+  def caveats
+    <<~EOS
+      Update your git config to finish installation:
 
-      # Update global git config
-      $ git lfs install
+        # Update global git config
+        $ git lfs install
 
-      # Update system git config
-      $ git lfs install --system
-  EOS
+        # Update system git config
+        $ git lfs install --system
+    EOS
   end
 
   test do

@@ -1,15 +1,22 @@
 class WireguardTools < Formula
   desc "Tools for the WireGuard secure network tunnel"
   homepage "https://www.wireguard.com/"
-  url "https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20200102.tar.xz"
-  sha256 "547cd1c2f8dca904faac9e8d3964f1ef956c24bb12e3498da88dde95243c7f08"
-  head "https://git.zx2c4.com/wireguard-tools", :using => :git
+  url "https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20210424.tar.xz"
+  sha256 "b288b0c43871d919629d7e77846ef0b47f8eeaa9ebc9cedeee8233fc6cc376ad"
+  license "GPL-2.0-only"
+  head "https://git.zx2c4.com/wireguard-tools.git", branch: "master"
+
+  livecheck do
+    url :head
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a69292138a796558061f6cfd3442532656d7dd159ce9485a06680121d4c5d126" => :catalina
-    sha256 "df561610e2019f71aab38b14c2cb10a207e420caae270e480d6e6f6e43dfee88" => :mojave
-    sha256 "841caaad9af8f1825cde416f05bacf34f5d011e1c9c5516022f986d61974f5ec" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "30909b7220b43135eb3a0d37677ffc86245016b6c3f5d672dbffab01673172da"
+    sha256 cellar: :any_skip_relocation, big_sur:       "1f153d66ddac6cbafa6877e29af6ae58b32abd63331c372f86fa72e5d0a6a0e9"
+    sha256 cellar: :any_skip_relocation, catalina:      "59c67c1becf7d8d52f666094c71404e4f1bd133747bfdad717145a14a1c2a04f"
+    sha256 cellar: :any_skip_relocation, mojave:        "99745e645ddbed286defa52eeb6862325a09be2aab48fa04b23dec6686513a1a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "5fa851e7c42cc502f5525ddfc2cc6f4fe8133bb86b5600016dc1909631db831a"
   end
 
   depends_on "bash"

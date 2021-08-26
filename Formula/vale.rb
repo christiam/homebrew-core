@@ -1,21 +1,23 @@
 class Vale < Formula
   desc "Syntax-aware linter for prose"
   homepage "https://errata-ai.github.io/vale/"
-  url "https://github.com/errata-ai/vale/archive/v1.7.1.tar.gz"
-  sha256 "e1fee20d8fed7fc8819de310608b1ed584c0fad096cce95ecef727584ed9790f"
+  url "https://github.com/errata-ai/vale/archive/v2.10.5.tar.gz"
+  sha256 "fe6bf766a392c87bc707fa03c23c3bf7664114b0b8df6a99d2af6673ba7a241d"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "55d0d445b8a784ed4b3b4a3984607b47a7de9e08f965023eff3b9e4729be3d91" => :catalina
-    sha256 "76f9d344221f5121ac43b32874a303ecd2bb935bcb8d26ef39f8754046c46e3a" => :mojave
-    sha256 "7aef1f869c6f7d757897a106d22416741489f38b108c49e1c2347392b8bac045" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "ad170b47f3d9a002dd1401de3eeb44f573316855ef4921767891c59938658cce"
+    sha256 cellar: :any_skip_relocation, big_sur:       "fd3c125add16818ad96b65c96cbe254831606c0f5e38bdceaa67465873a6a254"
+    sha256 cellar: :any_skip_relocation, catalina:      "d1ffa2383e00c8a1af85788bc9ac933da0199794a5f688027fb74cfea408af6b"
+    sha256 cellar: :any_skip_relocation, mojave:        "d0a402c2ac07d527bb4003a57ead7572dc68b3cf332977dc0d091807667775e4"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "61205767cd32ac368d6982b338aa432902718d16ec334d2d35233c5c01eb7fdf"
   end
 
   depends_on "go" => :build
 
   def install
-    flags = "-X main.version=#{version} -s -w"
-    system "go", "build", "-ldflags=#{flags}", "-o", "#{bin}/#{name}"
+    ldflags = "-X main.version=#{version} -s -w"
+    system "go", "build", *std_go_args, "-ldflags=#{ldflags}", "./cmd/vale"
   end
 
   test do
@@ -37,6 +39,6 @@ class Vale < Formula
     (testpath/"document.md").write("# heading is not capitalized")
 
     output = shell_output("#{bin}/vale --config=#{testpath}/vale.ini #{testpath}/document.md 2>&1")
-    assert_match("✖ 0 errors, 1 warning and 0 suggestions in 1 file.", output)
+    assert_match(/✖ .*0 errors.*, .*1 warning.* and .*0 suggestions.* in 1 file\./, output)
   end
 end

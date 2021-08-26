@@ -1,31 +1,40 @@
 class Flawfinder < Formula
+  include Language::Python::Shebang
+
   desc "Examines code and reports possible security weaknesses"
-  homepage "https://www.dwheeler.com/flawfinder/"
-  url "https://www.dwheeler.com/flawfinder/flawfinder-2.0.10.tar.gz"
-  sha256 "f1dcb1ec3e35685e46a8512137b8062daa1d0327900177998a405feab608adeb"
-  head "https://git.code.sf.net/p/flawfinder/code.git"
+  homepage "https://dwheeler.com/flawfinder/"
+  url "https://dwheeler.com/flawfinder/flawfinder-2.0.18.tar.gz"
+  sha256 "6a51efd7869e0f36a00f33455ec2d1745dc36121130625887b4589e646f062c2"
+  license "GPL-2.0-or-later"
+  head "https://github.com/david-a-wheeler/flawfinder.git"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?flawfinder[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "8af2dc44618f0068854fc86e2b6fd100faf09ed25b44cf9de5d44d6fe5999927" => :catalina
-    sha256 "f782448190a609f5b8e928428b7a5dece33a9ed8eea00707e8e2ec5d69f3aed2" => :mojave
-    sha256 "f782448190a609f5b8e928428b7a5dece33a9ed8eea00707e8e2ec5d69f3aed2" => :high_sierra
-    sha256 "5d58c32a6c4c947552e23265e71f8138daf6663cf2de5b6f50fd00f10ae8e2fb" => :sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "2543426a3f0c9fce88f8e1ef6dac28f553c1ffbcc5507f1bff4f751179c4eb76"
+    sha256 cellar: :any_skip_relocation, big_sur:       "12a152169ad256368cb53f466fb7cdfa0ef30a8e214d71226a90e6dd038a3303"
+    sha256 cellar: :any_skip_relocation, catalina:      "12a152169ad256368cb53f466fb7cdfa0ef30a8e214d71226a90e6dd038a3303"
+    sha256 cellar: :any_skip_relocation, mojave:        "12a152169ad256368cb53f466fb7cdfa0ef30a8e214d71226a90e6dd038a3303"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "2543426a3f0c9fce88f8e1ef6dac28f553c1ffbcc5507f1bff4f751179c4eb76"
   end
 
-  resource "flaws" do
-    url "https://www.dwheeler.com/flawfinder/test.c"
-    sha256 "4a9687a091b87eed864d3e35a864146a85a3467eb2ae0800a72e330496f0aec3"
-  end
+  depends_on "python@3.9"
 
   def install
+    rewrite_shebang detected_python_shebang, "flawfinder.py"
     system "make", "prefix=#{prefix}", "install"
   end
 
   test do
-    resource("flaws").stage do
-      assert_match "Hits = 36",
-                   shell_output("#{bin}/flawfinder test.c")
-    end
+    (testpath/"test.c").write <<~EOS
+      int demo(char *a, char *b) {
+        strcpy(a, "\n");
+        strcpy(a, gettext("Hello there"));
+      }
+    EOS
+    assert_match("Hits = 2\n", shell_output("#{bin}/flawfinder test.c"))
   end
 end

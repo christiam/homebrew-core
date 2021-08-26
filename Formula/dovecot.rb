@@ -1,20 +1,35 @@
 class Dovecot < Formula
   desc "IMAP/POP3 server"
   homepage "https://dovecot.org/"
-  url "https://dovecot.org/releases/2.3/dovecot-2.3.8.tar.gz"
-  sha256 "c5778d03bf26ab34a605854098035badec455d07adfab38d974f610c8f78b649"
+  url "https://dovecot.org/releases/2.3/dovecot-2.3.16.tar.gz"
+  sha256 "03a71d53055bd9ec528d55e07afaf15c09dec9856cba734904bfd05acbc6cf12"
+  license all_of: ["BSD-3-Clause", "LGPL-2.1-or-later", "MIT", "Unicode-DFS-2016", :public_domain]
+
+  livecheck do
+    url "https://dovecot.org/download"
+    regex(/href=.*?dovecot[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "309a862f3cdc959cf2f42e9f18d6b6114b31c11f928414057c15dc18a197a433" => :catalina
-    sha256 "09830a87a9cb50ce4543feeec61024ed4bac334b28728b5393ac7d6038429fbe" => :mojave
-    sha256 "f74d62538df971fd54a56c8795ea23aca238b74149dd9571598bf91c44d3743e" => :high_sierra
+    sha256 arm64_big_sur: "cf575ab457beca6bc27f67d5044d3b46dd3dfaff7693f0b8306b7a57f96dd7af"
+    sha256 big_sur:       "c1feffb201e4febf583cae5597f09ffcb595ed050af95b59f3ef342ef394a60e"
+    sha256 catalina:      "f3c3f3fce439ab75e20fe6fc49f8e186653afb68c0a9779791a31dd8e04b4850"
+    sha256 mojave:        "a8867734064460304e21056d59156f8f01e0b0ec15341e3fac901167eff0bc8f"
+    sha256 x86_64_linux:  "c4c1beb8368da32f6743e58c7a0db23397081c366ceddedf026598a4d215241e"
   end
 
   depends_on "openssl@1.1"
 
+  uses_from_macos "bzip2"
+  uses_from_macos "sqlite"
+
+  on_linux do
+    depends_on "linux-pam"
+  end
+
   resource "pigeonhole" do
-    url "https://pigeonhole.dovecot.org/releases/2.3/dovecot-2.3-pigeonhole-0.5.8.tar.gz"
-    sha256 "8fb860d50c1b1a09aea9e25f8ee89c22e34ecedfb0e11a1c48a7f67310759022"
+    url "https://pigeonhole.dovecot.org/releases/2.3/dovecot-2.3-pigeonhole-0.5.16.tar.gz"
+    sha256 "5ca36780e23b99e6206440f1b3fe3c6598eda5b699b99cebb15d418ba3c6e938"
   end
 
   def install
@@ -47,47 +62,20 @@ class Dovecot < Formula
     end
   end
 
-  def caveats; <<~EOS
-    For Dovecot to work, you may need to create a dovecot user
-    and group depending on your configuration file options.
-  EOS
+  def caveats
+    <<~EOS
+      For Dovecot to work, you may need to create a dovecot user
+      and group depending on your configuration file options.
+    EOS
   end
 
-  plist_options :startup => true
+  plist_options startup: true
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>KeepAlive</key>
-        <false/>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_sbin}/dovecot</string>
-          <string>-F</string>
-        </array>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/dovecot/dovecot.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/dovecot/dovecot.log</string>
-        <key>SoftResourceLimits</key>
-        <dict>
-        <key>NumberOfFiles</key>
-        <integer>1000</integer>
-        </dict>
-        <key>HardResourceLimits</key>
-        <dict>
-        <key>NumberOfFiles</key>
-        <integer>1024</integer>
-        </dict>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_sbin/"dovecot", "-F"]
+    environment_variables PATH: std_service_path_env
+    error_log_path var/"log/dovecot/dovecot.log"
+    log_path var/"log/dovecot/dovecot.log"
   end
 
   test do

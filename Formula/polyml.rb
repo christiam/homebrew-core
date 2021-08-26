@@ -1,22 +1,16 @@
 class Polyml < Formula
   desc "Standard ML implementation"
   homepage "https://www.polyml.org/"
-  url "https://github.com/polyml/polyml/archive/v5.8.tar.gz"
-  sha256 "6bcc2c5af91f361ef9e0bb28f39ce20171b0beae73b4db3674df6fc793cec8bf"
+  url "https://github.com/polyml/polyml/archive/v5.8.2.tar.gz"
+  sha256 "310b0ba748a50f38e99de7f65ba990bc4b4f4b0123ad76aba4c44d7cd1ed9277"
+  license "LGPL-2.1"
   head "https://github.com/polyml/polyml.git"
 
   bottle do
-    rebuild 1
-    sha256 "1439f4258d7fa8adfab0b037ae43c5effaffd9b1c7793c05f73a0f130b65d403" => :catalina
-    sha256 "356373c5c6483a552164e3aa815076688f37e41d74f8350a52321205f5d4547d" => :mojave
-    sha256 "d69da52fe77cd77d079de8ba2b389ced34800cebf55202d023c6800d584a5212" => :high_sierra
-  end
-
-  # Patch for Xcode 11
-  # https://github.com/polyml/polyml/pull/119
-  patch do
-    url "https://github.com/polyml/polyml/commit/44efa473.diff?full_index=1"
-    sha256 "0835165da3f0b540c13e06d79dfdc4bcbcc4cde17207ea2e02978582552ee4d0"
+    sha256 big_sur:      "4b68c9e84f40360b1b65444949637bb1f5749f532ad198a44f3bb570854b9900"
+    sha256 catalina:     "1517e342bf9c4569b986d1139c063e14a999cacb29597e53e438040090e93424"
+    sha256 mojave:       "fccbd2fc3c3570178c8578475035fbee24ab9280a3366a82b797c1fb7627c588"
+    sha256 x86_64_linux: "d356087174d4a1031bbacaac76dfcb1735d613a55510ff8b0207ea6d53994038"
   end
 
   def install
@@ -24,5 +18,16 @@ class Polyml < Formula
                           "--prefix=#{prefix}"
     system "make"
     system "make", "install"
+  end
+
+  test do
+    (testpath/"hello.ml").write <<~EOS
+      let
+        fun concatWithSpace(a,b) = a ^ " " ^ b
+      in
+        TextIO.print(concatWithSpace("Hello", "World"))
+      end
+    EOS
+    assert_match "Hello World", shell_output("#{bin}/poly --script hello.ml")
   end
 end

@@ -1,33 +1,33 @@
 class Sysbench < Formula
   desc "System performance benchmark tool"
   homepage "https://github.com/akopytov/sysbench"
-  url "https://github.com/akopytov/sysbench/archive/1.0.19.tar.gz"
-  sha256 "39cde56b58754d97b2fe6a1688ffc0e888d80c262cf66daee19acfb2997f9bdd"
+  url "https://github.com/akopytov/sysbench/archive/1.0.20.tar.gz"
+  sha256 "e8ee79b1f399b2d167e6a90de52ccc90e52408f7ade1b9b7135727efe181347f"
+  license "GPL-2.0-or-later"
+  revision 1
+  head "https://github.com/akopytov/sysbench.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "6b71a2ae66e021e31ac79c3924fffeec0dffa9f3aeeea073cc47005bd1ef2c4f" => :catalina
-    sha256 "ae9b590957ecca03a87614dfb0cf8ba70d0645d2b105cd259955b5353858ab45" => :mojave
-    sha256 "793f35c8eb8db96af5f54d8fdda7590cfb6c592b0d3f2cd384e74ff75c5f4fdc" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "8f5fd6827291b2eb5f3a5b4c842a059182802d2ad97dcbd894046e5b2750914f"
+    sha256 cellar: :any,                 big_sur:       "a9c638a46ddda6841018ad7354673315882a83e2aad7a480f46663db25e3c553"
+    sha256 cellar: :any,                 catalina:      "f85e28b078ef05d9a155d0655275e6a9418494d94ab3dd524607a9c6ca84806b"
+    sha256 cellar: :any,                 mojave:        "a29e37acd73943d5a1d72e6a5cb2f0812e2be3aeb061f919d271a8b31f2ac412"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "8f9cf704a34e18ddf2b4e826500a6b98b6e0df6e9b2dcf85e93dfe9f5fa2988f"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
   depends_on "pkg-config" => :build
+  depends_on "luajit-openresty"
   depends_on "mysql-client"
   depends_on "openssl@1.1"
 
+  uses_from_macos "vim" # needed for xxd
+
   def install
     system "./autogen.sh"
-
-    # Fix for luajit build breakage.
-    # Per https://luajit.org/install.html: If MACOSX_DEPLOYMENT_TARGET
-    # is not set then it's forced to 10.4, which breaks compile on Mojave.
-    # https://github.com/LuaJIT/LuaJIT/issues/518: set to 10.14 to build on Catalina.
-    ENV["MACOSX_DEPLOYMENT_TARGET"] = (DevelopmentTools.clang_build_version >= 1100) ? "10.14" : MacOS.version
-
-    system "./configure", "--prefix=#{prefix}", "--with-mysql"
+    system "./configure", "--prefix=#{prefix}", "--with-mysql", "--with-system-luajit"
     system "make", "install"
   end
 

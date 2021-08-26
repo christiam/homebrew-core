@@ -1,26 +1,27 @@
 class Unison < Formula
   desc "File synchronization tool for OSX"
   homepage "https://www.cis.upenn.edu/~bcpierce/unison/"
-  url "https://github.com/bcpierce00/unison/archive/v2.51.2.tar.gz"
-  sha256 "a2efcbeab651be6df69cc9b253011a07955ecb91fb407a219719451197849d5e"
-  head "https://github.com/bcpierce00/unison.git", :branch => "master"
+  url "https://github.com/bcpierce00/unison/archive/v2.51.4.tar.gz"
+  sha256 "d1ecc7581aaf2ed0f3403d4960f468acd7b9f1d92838a17c96e6d1df79b802d5"
+  license "GPL-3.0-or-later"
+  head "https://github.com/bcpierce00/unison.git", branch: "master"
+
+  # The "latest" release on GitHub sometimes points to unstable versions (e.g.,
+  # release candidates), so we check the Git tags instead.
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "045499eab89d6b0d3faa898fe91c71bc7cba031c5a244c2f7367bc3825c958b5" => :catalina
-    sha256 "58e3ccf3e3f0ac6b331b786fdb7bbe9f0e22babec094279f2c715bef256daacb" => :mojave
-    sha256 "0cce7f269f0458a4ce1318fce5af58f9bcbfd29e314211fc8dedb6b4d8a7f1fb" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "38e7fb0ba3af85a957f7680b349fdcfcad50c47f6bd5970bbff40c52435550e9"
+    sha256 cellar: :any_skip_relocation, big_sur:       "4e0e92dbed77b5a10ccaf2ed146707fc92d1332d3063b7495f381aff79a312ee"
+    sha256 cellar: :any_skip_relocation, catalina:      "c792e2e2a701edd6f6a4f855ec0053567d4cdc424e369fcb51a9659563e8bd43"
+    sha256 cellar: :any_skip_relocation, mojave:        "f2df486827594d32b05b5ac1c1976aebd47938f7ea6d1c6ae6e70a19ab3e0588"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "6c336751c0cd7e7ec4c0a37c064033082ee8b7f2dc4fafa7c768c6aba2e75209"
   end
 
   depends_on "ocaml" => :build
-
-  # Upstream fix for compatibility with OCaml 4.08 and later
-  # https://github.com/bcpierce00/unison/pull/276
-  patch do
-    url "https://github.com/bcpierce00/unison/commit/23fa1292.diff?full_index=1"
-    sha256 "ad6b28dc2fe1c6c99863079c7e96b12452aa05c05ed010b6c551e32244ce76f2"
-  end
 
   def install
     ENV.deparallelize

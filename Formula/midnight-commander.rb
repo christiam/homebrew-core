@@ -1,14 +1,30 @@
 class MidnightCommander < Formula
   desc "Terminal-based visual file manager"
   homepage "https://www.midnight-commander.org/"
-  url "https://www.midnight-commander.org/downloads/mc-4.8.23.tar.xz"
-  sha256 "dd7f7ce74183307b0df25b5c3e60ad3293fd3d3d27d2f37dd7a10efce13dff1c"
-  head "https://github.com/MidnightCommander/mc.git"
+  url "https://www.midnight-commander.org/downloads/mc-4.8.27.tar.xz"
+  mirror "https://ftp.osuosl.org/pub/midnightcommander/mc-4.8.27.tar.xz"
+  sha256 "31be59225ffa9920816e9a8b3be0ab225a16d19e4faf46890f25bdffa02a4ff4"
+  license "GPL-3.0-or-later"
+
+  livecheck do
+    url "https://ftp.osuosl.org/pub/midnightcommander/"
+    regex(/href=.*?mc[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "5c97885f5afc7eeeb4cf0cafc805f551dcd05ef88d918b401619eda36f0e5d2b" => :catalina
-    sha256 "e76360b03ae28f84ee962e1e15a7bd4506a7bb7dc0811f88647beed8a21beae4" => :mojave
-    sha256 "cac5b58750645de5fb74112a5ba5e640593500fc3b78d45d33432d448e962d61" => :high_sierra
+    sha256 arm64_big_sur: "3f45e1b92e6f263924e4544f0c935b4d18c1e37fdfcf0b7f7d5be369e05910b9"
+    sha256 big_sur:       "31c1399b014432a36b0dcbb7b3834c50f7c5ac0809a8d1ae7bf8df8afbe838c1"
+    sha256 catalina:      "1b39f54060789701af81163180ae7dab3fffcee18cc07bc6255f3f712504a3a3"
+    sha256 mojave:        "dc2578f9825aa95824489fe52bfde70a130dadcd1c232c4fb07d538f1d9b19d1"
+    sha256 x86_64_linux:  "2c3ec573057f385886b1c20515a8788e3c0b0d9767829dd3a93c74b5973a5cb3"
+  end
+
+  head do
+    url "https://github.com/MidnightCommander/mc.git"
+
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
 
   depends_on "pkg-config" => :build
@@ -17,14 +33,7 @@ class MidnightCommander < Formula
   depends_on "openssl@1.1"
   depends_on "s-lang"
 
-  conflicts_with "minio-mc", :because => "Both install a `mc` binary"
-
-  # Fix compilation https://midnight-commander.org/ticket/4035
-  # Remove in next release
-  patch do
-    url "https://midnight-commander.org/raw-attachment/ticket/4035/mc-4.8.23.patch"
-    sha256 "eca0c095700bc4c4a41e74da0f95874c4a91a0f22ad45b2d96b32d2f537d856f"
-  end
+  conflicts_with "minio-mc", because: "both install an `mc` binary"
 
   def install
     args = %W[
@@ -40,9 +49,13 @@ class MidnightCommander < Formula
     # Fix compilation bug on macOS 10.13 by pretending we don't have utimensat()
     # https://github.com/MidnightCommander/mc/pull/130
     ENV["ac_cv_func_utimensat"] = "no" if MacOS.version >= :high_sierra
-
+    system "./autogen.sh" if build.head?
     system "./configure", *args
     system "make", "install"
+
+    on_macos do
+      inreplace share/"mc/syntax/Syntax", HOMEBREW_SHIMS_PATH/"mac/super", "/usr/bin"
+    end
   end
 
   test do

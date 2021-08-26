@@ -3,18 +3,22 @@ class H2o < Formula
   homepage "https://github.com/h2o/h2o/"
   url "https://github.com/h2o/h2o/archive/v2.2.6.tar.gz"
   sha256 "f8cbc1b530d85ff098f6efc2c3fdbc5e29baffb30614caac59d5c710f7bda201"
+  license "MIT"
   revision 1
 
   bottle do
-    sha256 "2a76dbab7292c0244c32e6a350f0c39dfb4d9b066de8510f2d8f3a9905c05f54" => :catalina
-    sha256 "4f8f5c326d24dcfc95faf48849ae89721f1e19a407968cfa67efbc99dba33f76" => :mojave
-    sha256 "80eac6a05ba27ce57142ad1a9211495fa3b044433623438b6319109e2852eb55" => :high_sierra
-    sha256 "049e412820e6495cfb0906101cb00cea928543583cfc1b6986e0a52d1d215d0c" => :sierra
+    rebuild 1
+    sha256 arm64_big_sur: "235585aa8d60bdf07e3589282ae5704a7b417312e701a8774a12fbf407642aa1"
+    sha256 big_sur:       "44af35463fd8c70fa3cd4014dd8ec92c93e33b96a3dde07aa5e8c532f4ba15d3"
+    sha256 catalina:      "c3a59a760f51a19c8a6e946a49d7f689b81bef8f80d9157c9be5af628b6b2a1a"
+    sha256 mojave:        "7aa27f5811da60d7c51e4124ed8f54f102496c5e29585007fb2fe9cfee646bbe"
+    sha256 x86_64_linux:  "b33805c89af5cff42fd08df6fcd263a63721cbc04daf115e879fb0dc680aaa4f"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
   depends_on "openssl@1.1"
+
   uses_from_macos "zlib"
 
   def install
@@ -36,58 +40,38 @@ class H2o < Formula
   end
 
   # This is simplified from examples/h2o/h2o.conf upstream.
-  def conf_example; <<~EOS
-    listen: 8080
-    hosts:
-      "127.0.0.1.xip.io:8080":
-        paths:
-          /:
-            file.dir: #{var}/h2o/
-  EOS
+  def conf_example(port = 8080)
+    <<~EOS
+      listen: #{port}
+      hosts:
+        "127.0.0.1.xip.io:#{port}":
+          paths:
+            /:
+              file.dir: #{var}/h2o/
+    EOS
   end
 
-  def caveats; <<~EOS
-    A basic example configuration file has been placed in #{etc}/h2o.
+  def caveats
+    <<~EOS
+      A basic example configuration file has been placed in #{etc}/h2o.
 
-    You can find fuller, unmodified examples in #{opt_pkgshare}/examples.
-  EOS
+      You can find fuller, unmodified examples in #{opt_pkgshare}/examples.
+    EOS
   end
 
-  plist_options :manual => "h2o"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/h2o</string>
-            <string>-c</string>
-            <string>#{etc}/h2o/h2o.conf</string>
-        </array>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"h2o", "-c", etc/"h2o/h2o.conf"]
+    keep_alive true
   end
 
   test do
-    pid = fork do
-      exec "#{bin}/h2o -c #{etc}/h2o/h2o.conf"
+    port = free_port
+    (testpath/"h2o.conf").write conf_example(port)
+    fork do
+      exec "#{bin}/h2o -c #{testpath}/h2o.conf"
     end
     sleep 2
 
-    begin
-      assert_match "Welcome to H2O", shell_output("curl localhost:8080")
-    ensure
-      Process.kill("SIGINT", pid)
-      Process.wait(pid)
-    end
+    assert_match "Welcome to H2O", shell_output("curl localhost:#{port}")
   end
 end

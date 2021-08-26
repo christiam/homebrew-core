@@ -1,22 +1,22 @@
 class Ispc < Formula
   desc "Compiler for SIMD programming on the CPU"
   homepage "https://ispc.github.io"
-  url "https://github.com/ispc/ispc/archive/v1.12.0.tar.gz"
-  sha256 "9ebc29adcdf477659b45155d0f91e61120a12084e42113d0e9f4ce5cfdfbdcab"
-  revision 1
+  url "https://github.com/ispc/ispc/archive/v1.16.1.tar.gz"
+  sha256 "e5dcd0d85df6ed5feb454ad9ec295083a07d7459fcaba00d5dd6266ceb476399"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any
-    sha256 "99109ffe35534e264eea6814b4006a49a1aba2cda154ab2d22d7e0c29da6cfc0" => :catalina
-    sha256 "cc7f31ea15ede43f37e40270643d3fa86722bc4ccf9a1bf4c763ad6985a26ffb" => :mojave
-    sha256 "17439d6f18ba148e5a912f595240ce5c89a9f951059411217c53db59dbab75d2" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "774925e3f76b5bc791c697ccb33ba6ddb06263afc42afed3d3b5c042d1e418b2"
+    sha256 cellar: :any, big_sur:       "056f8214241e142cc25f5f0e80a7691676e301d53dd221a3e9f37eacbad9ddbb"
+    sha256 cellar: :any, catalina:      "f6cbc37b4e9288c21009fd9b575a74d201563736e67e9bbd03c3df72ad332e5e"
+    sha256 cellar: :any, mojave:        "b761277279a3b20607c33a0ada33caa467ee4d14dcec08ac96b272fd4b02c75a"
   end
 
   depends_on "bison" => :build
   depends_on "cmake" => :build
   depends_on "flex" => :build
+  depends_on "python@3.9" => :build
   depends_on "llvm"
-  depends_on "python"
 
   def install
     args = std_cmake_args + %W[
@@ -25,6 +25,7 @@ class Ispc < Formula
       -DISPC_INCLUDE_UTILS=OFF
       -DLLVM_TOOLS_BINARY_DIR='#{Formula["llvm"].opt_bin}'
       -DISPC_NO_DUMPS=ON
+      -DARM_ENABLED=#{Hardware::CPU.arm? ? "ON" : "OFF"}
     ]
 
     mkdir "build" do
@@ -47,7 +48,15 @@ class Ispc < Formula
         }
       }
     EOS
-    system bin/"ispc", "--arch=x86-64", "--target=sse2", testpath/"simple.ispc",
+
+    if Hardware::CPU.arm?
+      arch = "aarch64"
+      target = "neon"
+    else
+      arch = "x86-64"
+      target = "sse2"
+    end
+    system bin/"ispc", "--arch=#{arch}", "--target=#{target}", testpath/"simple.ispc",
       "-o", "simple_ispc.o", "-h", "simple_ispc.h"
 
     (testpath/"simple.cpp").write <<~EOS

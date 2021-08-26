@@ -1,36 +1,34 @@
 class Step < Formula
   desc "Crypto and x509 Swiss-Army-Knife"
   homepage "https://smallstep.com"
-  url "https://github.com/smallstep/cli/releases/download/v0.13.3/step-cli_0.13.3.tar.gz"
-  sha256 "9890cf5143139c4107136caeb2e81901cdad84dc2573fb22bba52d143cbd909e"
+  url "https://github.com/smallstep/cli/releases/download/v0.16.1/step_0.16.1.tar.gz"
+  sha256 "09a90d5731c98e96e63af754a9bfcc00f6d0584f954505c305b52974094dc430"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "82fa51961b992f9dfdfcd5091ef253a06c89c4a234748e785f143eada1d342b3" => :catalina
-    sha256 "2ffbc394977ac7f7a9dab3af0d39be9ecdddc9b79391047f59785bddedf4baa6" => :mojave
-    sha256 "6c94999c9bf97cbad55329617737458da2f15037602775c01158b36b646fe2af" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "e3150b89b4c083e63b7330417b7d5ebc4e1ac884fced45cefa251a9058f5c2f9"
+    sha256 cellar: :any_skip_relocation, big_sur:       "ffc856f090795a346911b0ec07ee654ae142d7fa7beca51d91e54ab0233f481b"
+    sha256 cellar: :any_skip_relocation, catalina:      "7cb397f326d74fcb368d4fcd76653fd5cc6d0c334d79f3afe2d1fbbeb030ffd3"
+    sha256 cellar: :any_skip_relocation, mojave:        "d248be3b4c75184c52f5937381c544898b97ea08017b22f669603e6ae7b8670e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "867edbfb1f69e5128fed3cbdaf343a4691b16db576bec6f7df8531d9f8973c91"
   end
 
-  depends_on "dep" => :build
   depends_on "go" => :build
 
   resource "certificates" do
-    url "https://github.com/smallstep/certificates/releases/download/v0.13.3/step-certificates_0.13.3.tar.gz"
-    sha256 "a198e0853f36c775392fbb37da1e986e66572270800413dd70d76b31a963158c"
+    url "https://github.com/smallstep/certificates/releases/download/v0.16.0/step-ca_0.16.0.tar.gz"
+    sha256 "d4f333bd972eb5b6bd2cf4a4fa403574e6dceffaa54109c0f8251cf37f1dfa48"
   end
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/smallstep/cli").install buildpath.children
-    cd "src/github.com/smallstep/cli" do
-      system "make", "build"
-      bin.install "bin/step" => "step"
-      bash_completion.install "autocomplete/bash_autocomplete" => "step"
-      zsh_completion.install "autocomplete/zsh_autocomplete" => "_step"
-    end
+    ENV["VERSION"] = version.to_s
+    system "make", "build"
+    bin.install "bin/step" => "step"
+    bash_completion.install "autocomplete/bash_autocomplete" => "step"
+    zsh_completion.install "autocomplete/zsh_autocomplete" => "_step"
 
-    resource("certificates").stage "#{buildpath}/src/github.com/smallstep/certificates"
-    cd "#{buildpath}/src/github.com/smallstep/certificates" do
+    resource("certificates").stage do |r|
+      ENV["VERSION"] = r.version.to_s
       system "make", "build"
       bin.install "bin/step-ca" => "step-ca"
     end
@@ -87,12 +85,17 @@ class Step < Formula
         "homebrew-smallstep-test", "--provisioner", "brew"
 
     begin
-      pid = fork { exec "#{bin}/step-ca", "--password-file", "#{testpath}/password.txt", "#{steppath}/config/ca.json" }
+      pid = fork do
+        exec "#{bin}/step-ca", "--password-file", "#{testpath}/password.txt",
+          "#{steppath}/config/ca.json"
+      end
+
       sleep 2
       shell_output("#{bin}/step ca health > health_response.txt")
       assert_match(/^ok$/, File.read(testpath/"health_response.txt"))
 
-      shell_output("#{bin}/step ca token --password-file #{testpath}/password.txt homebrew-smallstep-leaf > token.txt")
+      shell_output("#{bin}/step ca token --password-file #{testpath}/password.txt " \
+                   "homebrew-smallstep-leaf > token.txt")
       token = File.read(testpath/"token.txt")
       system "#{bin}/step", "ca", "certificate", "--token", token,
           "homebrew-smallstep-leaf", "brew.crt", "brew.key"
@@ -108,7 +111,7 @@ class Step < Formula
       shell_output("#{bin}/step certificate inspect --format json brew.crt > brew_crt.json")
       brew_crt_json = JSON.parse(File.read(testpath/"brew_crt.json"))
       assert_equal "CN=homebrew-smallstep-leaf", brew_crt_json["subject_dn"]
-      assert_equal "CN=homebrew-smallstep-test Intermediate CA", brew_crt_json["issuer_dn"]
+      assert_equal "O=homebrew-smallstep-test, CN=homebrew-smallstep-test Intermediate CA", brew_crt_json["issuer_dn"]
     ensure
       Process.kill(9, pid)
       Process.wait(pid)

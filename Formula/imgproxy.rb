@@ -1,15 +1,16 @@
 class Imgproxy < Formula
   desc "Fast and secure server for resizing and converting remote images"
   homepage "https://imgproxy.net"
-  url "https://github.com/imgproxy/imgproxy/archive/v2.8.0.tar.gz"
-  sha256 "ce5d5317e4db0fe5ca611458ab417943f6054bbc04dab93f61fc0071f6500996"
+  url "https://github.com/imgproxy/imgproxy/archive/v2.16.7.tar.gz"
+  sha256 "a86c60134fc06999c2bf038e0f12d73dd7452125764bf127b8adafc31db5426a"
+  license "MIT"
   head "https://github.com/imgproxy/imgproxy.git"
 
   bottle do
-    cellar :any
-    sha256 "710cdc91a8839ffc147dc32ed46b606ad69a1aa4f2270f8c74542e8d2668a034" => :catalina
-    sha256 "4e6860e5c8cd0f3322a39f1e9566780ba1f4aa0763b55f63e7137348038d5b04" => :mojave
-    sha256 "59c41dbd0cd2c7b4acc50ea328e13423778739ab8697818d29a1048dcb606999" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "ec7baaa49e8e557f3caec444dc89cd728d9b3a954b293a93f20582fdc48340fb"
+    sha256 cellar: :any, big_sur:       "267e63891e7efe226cfcacd5efc557497392d53b2a0d0f51d1bbc9f4f18adad5"
+    sha256 cellar: :any, catalina:      "3776427cf853631d1fe9167745eb872dd03804d7546701a153f86f0fe776e689"
+    sha256 cellar: :any, mojave:        "b3bf3f5ebbee3badecd323cbfb24d6b6bf363057515bfab312250c99aedd1af7"
   end
 
   depends_on "go" => :build
@@ -20,15 +21,11 @@ class Imgproxy < Formula
     ENV["CGO_LDFLAGS_ALLOW"]="-s|-w"
     ENV["CGO_CFLAGS_ALLOW"]="-Xpreprocessor"
 
-    system "go", "build", "-o", "#{bin}/#{name}"
+    system "go", "build", *std_go_args
   end
 
   test do
-    require "socket"
-
-    server = TCPServer.new(0)
-    port = server.addr[1]
-    server.close
+    port = free_port
 
     cp(test_fixtures("test.jpg"), testpath/"test.jpg")
 
@@ -38,11 +35,12 @@ class Imgproxy < Formula
     pid = fork do
       exec bin/"imgproxy"
     end
-    sleep 3
+    sleep 10
 
     output = testpath/"test-converted.png"
 
-    system("curl", "-s", "-o", output, "http://127.0.0.1:#{port}/insecure/fit/100/100/no/0/plain/local:///test.jpg@png")
+    system "curl", "-s", "-o", output,
+           "http://127.0.0.1:#{port}/insecure/fit/100/100/no/0/plain/local:///test.jpg@png"
     assert_equal 0, $CHILD_STATUS
     assert_predicate output, :exist?
 

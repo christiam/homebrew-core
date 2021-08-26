@@ -1,15 +1,16 @@
 class Uptimed < Formula
   desc "Utility to track your highest uptimes"
   homepage "https://github.com/rpodgorny/uptimed/"
-  url "https://github.com/rpodgorny/uptimed/archive/v0.4.2.tar.gz"
-  sha256 "5f803eccc1247b4a22171de4670a896e05adb9a82f018facda1b2cc5b19dbc97"
+  url "https://github.com/rpodgorny/uptimed/archive/v0.4.4.tar.gz"
+  sha256 "041f59710c316c68907e9bd07db2606f3dc16bee908b5644715ff2be30c59453"
+  license "GPL-2.0-only"
 
   bottle do
-    cellar :any
-    sha256 "8a60913d8acaf592560c0b6f42b77cd83b69adf5fbeee77e0e095f7e4b413f65" => :catalina
-    sha256 "ed7ff6b62654f5514d2657f07ed2dc83d5046a2219eb651b6423609fac961f28" => :mojave
-    sha256 "128fb7d767fc12e12917cbc761a942158f0fd75a5a9e209508670287cb5d00ed" => :high_sierra
-    sha256 "195a89c67e7e09ba690f1cfc8fd91ce07d0623ca9b5da4f2fc70dc7f1f81c9a7" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "4e1ae62985ae67f3733325ee8c87c8aafcc3702f58d8e97257eaca2c19367e96"
+    sha256 cellar: :any,                 big_sur:       "a7b8ccdc3076867427de19187190942d9403468a6d793de109d1207f9dab873e"
+    sha256 cellar: :any,                 catalina:      "8c30d6732c2ce84262b94e38df3a6eaa6a9412d7a35faff593167fb5cdec8450"
+    sha256 cellar: :any,                 mojave:        "309c440655a5166596facdcbcdd2035fd7fa5a6b1263f4bd10a8d1aa1be612b7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "bd27de8d758ab4c321995dcef58b156ecd302e70089bc6aa6e14bb802d8cb177"
   end
 
   depends_on "autoconf" => :build
@@ -28,37 +29,16 @@ class Uptimed < Formula
     system "make", "install"
   end
 
-  plist_options :manual => "uptimed"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <false/>
-        <key>WorkingDirectory</key>
-        <string>#{opt_prefix}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_sbin}/uptimed</string>
-          <string>-f</string>
-          <string>-p</string>
-          <string>#{var}/run/uptimed.pid</string>
-        </array>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_sbin/"uptimed", "-f", "-p", var/"run/uptimed.pid"]
+    keep_alive false
+    working_dir opt_prefix
   end
 
   test do
     system "#{sbin}/uptimed", "-t", "0"
     sleep 2
     output = shell_output("#{bin}/uprecords -s")
-    assert_match /->\s+\d+\s+\d+\w,\s+\d+:\d+:\d+\s+|.*/, output, "Uptime returned is invalid"
+    assert_match(/->\s+\d+\s+\d+\w,\s+\d+:\d+:\d+\s+|.*/, output, "Uptime returned is invalid")
   end
 end

@@ -3,14 +3,16 @@ class Jabba < Formula
   homepage "https://github.com/shyiko/jabba"
   url "https://github.com/shyiko/jabba/archive/0.11.2.tar.gz"
   sha256 "33874c81387f03fe1a27c64cb6fb585a458c1a2c1548b4b86694da5f81164355"
+  license "Apache-2.0"
   head "https://github.com/shyiko/jabba.git"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "0774ce652abc4e4a0e57bc8f4bbad5ecdae16b86ce28be04711bc48bba488e3d" => :catalina
-    sha256 "d3bcd841125639c3eb01e5cce60667c2f2c914d61a2f3f21d68e75ec10cf793c" => :mojave
-    sha256 "5d99c5f42d31a63c0019dbb1b16460553c91136ebbf2000f85a299c8aa8d0c15" => :high_sierra
+    rebuild 3
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "72cd725e75b0d214c6cbc03bc87fcb15d9b824ea24eba43f267cdfc768edf460"
+    sha256 cellar: :any_skip_relocation, big_sur:       "72c397a12fe10181efb7fca300d78d3244160c9a0a4dcbe2cd17c179df678db4"
+    sha256 cellar: :any_skip_relocation, catalina:      "146e37a3138b919c497da279eecd2d282d5f6f5e0f1b9aa94257df2fbf19efba"
+    sha256 cellar: :any_skip_relocation, mojave:        "6f2d27333e0b8d73ba2166c4abb960642d64a3efcd394ee5683e6c71b8d0c305"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "359b80689e628a11217fe33067133d61eb52970610e45d54ace41705ccb06b5d"
   end
 
   depends_on "glide" => :build
@@ -18,6 +20,7 @@ class Jabba < Formula
 
   def install
     ENV["GOPATH"] = buildpath
+    ENV["GO111MODULE"] = "auto"
     ENV["GLIDE_HOME"] = HOMEBREW_CACHE/"glide_home/#{name}"
     dir = buildpath/"src/github.com/shyiko/jabba"
     dir.install buildpath.children
@@ -30,10 +33,15 @@ class Jabba < Formula
   end
 
   test do
+    jdk_version = "zulu@1.16.0-0"
+    version_check ='openjdk version "16'
+
     ENV["JABBA_HOME"] = testpath/"jabba_home"
-    system bin/"jabba", "install", "1.13.0"
-    jdk_path = Utils.popen_read("#{bin}/jabba which 1.13.0").strip
-    assert_match 'java version "13.0',
-                 shell_output("#{jdk_path}/Contents/Home/bin/java -version 2>&1")
+
+    system bin/"jabba", "install", jdk_version
+    jdk_path = shell_output("#{bin}/jabba which #{jdk_version}").strip
+    on_macos { jdk_path = "#{jdk_path}/Contents/Home" }
+    assert_match version_check,
+                 shell_output("#{jdk_path}/bin/java -version 2>&1")
   end
 end

@@ -1,29 +1,45 @@
 class PostgresqlAT11 < Formula
   desc "Object-relational database system"
   homepage "https://www.postgresql.org/"
-  url "https://ftp.postgresql.org/pub/source/v11.6/postgresql-11.6.tar.bz2"
-  sha256 "49924f7ff92965fdb20c86e0696f2dc9f8553e1563124ead7beedf8910c13170"
+  url "https://ftp.postgresql.org/pub/source/v11.13/postgresql-11.13.tar.bz2"
+  sha256 "a0c3689ff7f565288002cbc138779d5121d74831a5e8341aea7aa86e99b6bc48"
+  license "PostgreSQL"
+
+  livecheck do
+    url "https://ftp.postgresql.org/pub/source/"
+    regex(%r{href=["']?v?(11(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    sha256 "c91e358723fd5f700f059a0a1beff478d3e4aaa2ec40a3a166e946ff130d9fd0" => :catalina
-    sha256 "a0ec5167cf23417dac44c1c55223b04d01ac4d12dd3644c6b9996e1ff6fac062" => :mojave
-    sha256 "b961161a08696433b6b4280cb10719ce869dc5dc4f259ec8f3830098cc4cef5d" => :high_sierra
+    sha256 arm64_big_sur: "85f0d2d6b0d0671fc379577896838c1a1c524ba87ad715f0288ec647fc96e004"
+    sha256 big_sur:       "281b2af565e25ba6ad8ce1f0942bc7ea1bc75e0cb0ae28874a7e17f58c493fff"
+    sha256 catalina:      "a1102062244942c4b12d92e53ec03190171f8b4f1d4d2248b9e2cad255dcb7ef"
+    sha256 mojave:        "fb1bd0c60a2944dcd398873e5d6a341186335b428c3a623be9936a31e859f002"
+    sha256 x86_64_linux:  "e58f43df61e90a5b4224bc4ccf367820dd391e8111cc6977b19d9a8542e70129"
   end
 
   keg_only :versioned_formula
+
+  # https://www.postgresql.org/support/versioning/
+  deprecate! date: "2023-11-09", because: :unsupported
 
   depends_on "pkg-config" => :build
   depends_on "icu4c"
   depends_on "openssl@1.1"
   depends_on "readline"
+
+  uses_from_macos "krb5"
   uses_from_macos "libxml2"
   uses_from_macos "libxslt"
+  uses_from_macos "openldap"
   uses_from_macos "perl"
 
-  def install
-    # avoid adding the SDK library directory to the linker search path
-    ENV["XML2_CONFIG"] = "xml2-config --exec-prefix=/usr"
+  on_linux do
+    depends_on "linux-pam"
+    depends_on "util-linux"
+  end
 
+  def install
     ENV.prepend "LDFLAGS", "-L#{Formula["openssl@1.1"].opt_lib} -L#{Formula["readline"].opt_lib}"
     ENV.prepend "CPPFLAGS", "-I#{Formula["openssl@1.1"].opt_include} -I#{Formula["readline"].opt_include}"
 
@@ -36,7 +52,6 @@ class PostgresqlAT11 < Formula
       --sysconfdir=#{etc}
       --docdir=#{doc}
       --enable-thread-safety
-      --with-bonjour
       --with-gssapi
       --with-icu
       --with-ldap
@@ -47,13 +62,16 @@ class PostgresqlAT11 < Formula
       --with-perl
       --with-uuid=e2fs
     ]
-
-    # The CLT is required to build Tcl support on 10.7 and 10.8 because
-    # tclConfig.sh is not part of the SDK
-    args << "--with-tcl"
-    if File.exist?("#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework/tclConfig.sh")
-      args << "--with-tclconfig=#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework"
+    on_macos do
+      args += %w[
+        --with-bonjour
+        --with-tcl
+      ]
     end
+
+    # PostgreSQL by default uses xcodebuild internally to determine this,
+    # which does not work on CLT-only installs.
+    args << "PG_SYSROOT=#{MacOS.sdk_path}" if MacOS.sdk_root_needed?
 
     system "./configure", *args
     system "make"
@@ -64,54 +82,55 @@ class PostgresqlAT11 < Formula
                                     "pkgincludedir=#{include}",
                                     "includedir_server=#{include}/server",
                                     "includedir_internal=#{include}/internal"
+
+    on_linux do
+      inreplace lib/"pgxs/src/Makefile.global",
+                "LD = #{HOMEBREW_PREFIX}/Homebrew/Library/Homebrew/shims/linux/super/ld",
+                "LD = #{HOMEBREW_PREFIX}/bin/ld"
+    end
   end
 
   def post_install
     (var/"log").mkpath
-    (var/name).mkpath
-    unless File.exist? "#{var}/#{name}/PG_VERSION"
-      system "#{bin}/initdb", "--locale=C", "-E", "UTF-8", "#{var}/#{name}"
-    end
+    postgresql_datadir.mkpath
+
+    # Don't initialize database, it clashes when testing other PostgreSQL versions.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
+    system "#{bin}/initdb", "--locale=C", "-E", "UTF-8", postgresql_datadir unless pg_version_exists?
   end
 
-  def caveats; <<~EOS
-    To migrate existing data from a previous major version of PostgreSQL run:
-      brew postgresql-upgrade-database
-  EOS
+  def postgresql_datadir
+    var/name
   end
 
-  plist_options :manual => "pg_ctl -D #{HOMEBREW_PREFIX}/var/postgresql@11 start"
+  def postgresql_log_path
+    var/"log/#{name}.log"
+  end
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/postgres</string>
-        <string>-D</string>
-        <string>#{var}/#{name}</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{HOMEBREW_PREFIX}</string>
-      <key>StandardOutPath</key>
-      <string>#{var}/log/#{name}.log</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/log/#{name}.log</string>
-    </dict>
-    </plist>
-  EOS
+  def pg_version_exists?
+    (postgresql_datadir/"PG_VERSION").exist?
+  end
+
+  def caveats
+    <<~EOS
+      This formula has created a default database cluster with:
+        initdb --locale=C -E UTF-8 #{postgresql_datadir}
+      For more details, read:
+        https://www.postgresql.org/docs/#{version.major}/app-initdb.html
+    EOS
+  end
+
+  service do
+    run [opt_bin/"postgres", "-D", var/"postgresql@11"]
+    keep_alive true
+    log_path var/"log/postgresql@11.log"
+    error_log_path var/"log/postgresql@11.log"
+    working_dir HOMEBREW_PREFIX
   end
 
   test do
-    system "#{bin}/initdb", testpath/"test"
+    system "#{bin}/initdb", testpath/"test" unless ENV["HOMEBREW_GITHUB_ACTIONS"]
     assert_equal opt_pkgshare.to_s, shell_output("#{bin}/pg_config --sharedir").chomp
     assert_equal opt_lib.to_s, shell_output("#{bin}/pg_config --libdir").chomp
     assert_equal opt_lib.to_s, shell_output("#{bin}/pg_config --pkglibdir").chomp

@@ -1,74 +1,79 @@
 class Watchman < Formula
   desc "Watch files and take action when they change"
   homepage "https://github.com/facebook/watchman"
-  revision 3
-  head "https://github.com/facebook/watchman.git"
-
-  stable do
-    url "https://github.com/facebook/watchman/archive/v4.9.0.tar.gz"
-    sha256 "1f6402dc70b1d056fffc3748f2fdcecff730d8843bb6936de395b3443ce05322"
-
-    # Upstream commit from 1 Sep 2017: "Have bin scripts use iter() method for python3"
-    patch do
-      url "https://github.com/facebook/watchman/commit/17958f7d.diff?full_index=1"
-      sha256 "edad4971fceed2aecfa2b9c3e8e22c455bfa073732a3a0c77b030e506ee860af"
-    end
-  end
+  url "https://github.com/facebook/watchman/archive/v2021.08.02.00.tar.gz"
+  sha256 "8994793334422d5101a087aadec55aa2d73979c0b4b63368dfc1a9ac5e547a2d"
+  license "Apache-2.0"
+  revision 1
+  head "https://github.com/facebook/watchman.git", branch: "master"
 
   bottle do
-    sha256 "7c01f1d4e6e8c15ec4d3625520b7e43e245d22f33ce7319dc962b7cb0b9b3d5d" => :catalina
-    sha256 "a9b3039561abdde021ba080ee1e37984f7f56184476a4ffee1db476561f92d83" => :mojave
-    sha256 "158a3dcce76f01446c9264a6f623a1c6be339118760ce61d88a9d38e2676ad45" => :high_sierra
-    sha256 "013faefc9001613c58680e5626b36fe943ca943649882054fbfbefccf4796415" => :sierra
+    sha256 cellar: :any, arm64_big_sur: "896a77c6c7289380d1a173b0c97b2e64418e5a4098cf01c882a8c75748a4b074"
+    sha256 cellar: :any, big_sur:       "c744264cd104d9881b39ae9262305c2ebc788c1914a5228fbe856450e9e07ff4"
+    sha256 cellar: :any, catalina:      "31d96cf969b3827beacae1ae9be47b92adddcede3b2903c51361155d6170f438"
+    sha256 cellar: :any, mojave:        "e8fc3b77dfe13f30a87e2235222f66f91d3f0f313331633d6ccfbcd608086996"
+    sha256               x86_64_linux:  "dad1d7f0d9cc4a79b06fda5d235ab623f4a54558d2cc8999bfad2c3569df364b"
   end
 
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
+  depends_on "cmake" => :build
   depends_on "pkg-config" => :build
-  depends_on :macos => :yosemite # older versions don't support fstatat(2)
+  depends_on "rust" => :build
+  depends_on "boost"
+  depends_on "fmt"
+  depends_on "folly"
+  depends_on "gflags"
+  depends_on "glog"
+  depends_on "libevent"
   depends_on "openssl@1.1"
   depends_on "pcre"
-  depends_on "python"
+  depends_on "python@3.9"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
+
+  # The `googletest` formula (v1.11+) currently causes build failures.
+  # On macOS: watchman_string.h:114:16: error: no member named 'data' in 'watchman_pending_fs'
+  # On Linux: gtest-printers.h:211:33: error: no match for 'operator<<'
+  # Use https://github.com/facebook/watchman/blob/#{version}/build/fbcode_builder/manifests/googletest
+  resource "googletest" do
+    url "https://github.com/google/googletest/archive/release-1.10.0.tar.gz"
+    sha256 "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb"
+  end
 
   def install
-    system "./autogen.sh"
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
-                          "--with-pcre",
-                          # Do homebrew specific Python installation below
-                          "--without-python",
-                          "--enable-statedir=#{var}/run/watchman"
-    system "make"
-    system "make", "install"
-
-    # Homebrew specific python application installation
-    xy = Language::Python.major_minor_version "python3"
-    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python#{xy}/site-packages"
-    cd "python" do
-      system "python3", *Language::Python.setup_install_args(libexec)
+    resource("googletest").stage do
+      cmake_args = std_cmake_args.reject { |s| s["CMAKE_INSTALL_PREFIX"] }
+      system "cmake", ".", *cmake_args, "-DCMAKE_INSTALL_PREFIX=#{buildpath}/googletest"
+      system "make", "install"
     end
-    bin.install Dir[libexec/"bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    ENV["GTest_DIR"] = ENV["GMock_DIR"] = buildpath/"googletest"
+
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DBUILD_SHARED_LIBS=ON",
+                    "-DWATCHMAN_VERSION_OVERRIDE=#{version}",
+                    "-DWATCHMAN_BUILDINFO_OVERRIDE=#{tap.user}",
+                    "-DWATCHMAN_STATE_DIR=#{var}/run/watchman",
+                    *std_cmake_args
+
+    # Workaround for `Process terminated due to timeout`
+    ENV.deparallelize { system "cmake", "--build", "build" }
+    system "cmake", "--install", "build"
+
+    path = Pathname.new(File.join(prefix, HOMEBREW_PREFIX))
+    bin.install Dir[path/"bin/*"]
+    lib.install Dir[path/"lib/*"]
+    path.rmtree
   end
 
   def post_install
     (var/"run/watchman").mkpath
     chmod 042777, var/"run/watchman"
-    # Older versions would use socket activation in the launchd.plist, and since
-    # the homebrew paths are versioned, this meant that launchd would continue
-    # to reference the old version of the binary after upgrading.
-    # https://github.com/facebook/watchman/issues/358
-    # To help swing folks from an older version to newer versions, force unloading
-    # the plist here.  This is needed even if someone wanted to add brew services
-    # support; while there are still folks with watchman <4.8 this is still an
-    # upgrade concern.
-    home = ENV["HOME"]
-    system "launchctl", "unload",
-           "-F", "#{home}/Library/LaunchAgents/com.github.facebook.watchman.plist"
   end
 
   test do
-    assert_equal /(\d+\.\d+\.\d+)/.match(version)[0], shell_output("#{bin}/watchman -v").chomp
+    assert_equal(version.to_s, shell_output("#{bin}/watchman -v").chomp)
   end
 end

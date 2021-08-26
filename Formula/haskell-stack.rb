@@ -1,66 +1,37 @@
-require "language/haskell"
-
 class HaskellStack < Formula
-  include Language::Haskell::Cabal
-
-  desc "The Haskell Tool Stack"
+  desc "Cross-platform program for developing Haskell projects"
   homepage "https://haskellstack.org/"
-  url "https://github.com/commercialhaskell/stack/archive/v2.1.3.tar.gz"
-  sha256 "6a5b07e06585133bd385632c610f38d0c225a887e1ccb697ab09fec387838976"
+  url "https://github.com/commercialhaskell/stack/archive/v2.7.3.tar.gz"
+  sha256 "37f4bc0177534782609ec3a67ec413548d3f2cabff7c4c0bc8a92a36e49c6877"
+  license "BSD-3-Clause"
   head "https://github.com/commercialhaskell/stack.git"
 
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "65f8b095630d1018849e6e845efc33449af957143cddf2a1917908d7d11b4df6" => :catalina
-    sha256 "228c583aa3eb036ca6aaa8a9b9fe6ad152790bd537bffdaca295aa9f497174e7" => :mojave
-    sha256 "28d341adbc1acf444fb0f71899f14d81d772d5ba59ae6eebe201ac24fd6e3aa8" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "1febdf95d90161093914f0b130a2e560e3e536316b414ab4d894195f2ffbec61"
+    sha256 cellar: :any_skip_relocation, big_sur:       "5e9185c5fb43ee4aa892bd5e9460fba19874c741df8cb0791af25ec7dab40575"
+    sha256 cellar: :any_skip_relocation, catalina:      "eff4da14356490588c31bbdf4d327605c5209957956d2964eb42e65bb9f687ba"
+    sha256 cellar: :any_skip_relocation, mojave:        "f57fdcf4118acc46b507b6e091f8898f9f1200f5041d20460ac97cc57fe21364"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "1c0e6d39df1e8c28c0ed815df4a2f02a3e302a758fb9dade1aaf3d13212ce5ad"
   end
 
   depends_on "cabal-install" => :build
+  depends_on "ghc" => :build
+
   uses_from_macos "zlib"
 
-  # Stack requires stack to build itself. Yep.
-  resource "bootstrap-stack" do
-    url "https://github.com/commercialhaskell/stack/releases/download/v2.1.3/stack-2.1.3-osx-x86_64.tar.gz"
-    sha256 "84b05b9cdb280fbc4b3d5fe23d1fc82a468956c917e16af7eeeabec5e5815d9f"
-  end
-
-  # Stack has very specific GHC requirements.
-  # For 2.1.1, it requires 8.4.4.
-  resource "bootstrap-ghc" do
-    url "https://downloads.haskell.org/~ghc/8.4.4/ghc-8.4.4-x86_64-apple-darwin.tar.xz"
-    sha256 "28dc89ebd231335337c656f4c5ead2ae2a1acc166aafe74a14f084393c5ef03a"
-  end
-
   def install
-    (buildpath/"bootstrap-stack").install resource("bootstrap-stack")
-    ENV.append_path "PATH", "#{buildpath}/bootstrap-stack"
-
-    resource("bootstrap-ghc").stage do
-      binary = buildpath/"bootstrap-ghc"
-
-      system "./configure", "--prefix=#{binary}"
-      ENV.deparallelize { system "make", "install" }
-
-      ENV.prepend_path "PATH", binary/"bin"
-    end
-
-    cabal_sandbox do
-      # Let `stack` handle its own parallelization
-      # Prevents "install: mkdir ... ghc-7.10.3/lib: File exists"
-      jobs = ENV.make_jobs
-      ENV.deparallelize
-
-      system "stack", "-j#{jobs}", "--stack-yaml=stack-lts-12.yaml",
-             "--system-ghc", "--no-install-ghc", "build"
-      system "stack", "-j#{jobs}", "--stack-yaml=stack-lts-12.yaml",
-             "--system-ghc", "--no-install-ghc", "--local-bin-path=#{bin}",
-             "install"
-    end
+    system "cabal", "v2-update"
+    system "cabal", "v2-install", *std_cabal_v2_args
   end
 
   test do
     system bin/"stack", "new", "test"
+    assert_predicate testpath/"test", :exist?
+    assert_match "# test", File.read(testpath/"test/README.md")
   end
 end

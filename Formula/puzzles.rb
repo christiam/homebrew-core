@@ -2,30 +2,56 @@ class Puzzles < Formula
   desc "Collection of one-player puzzle games"
   homepage "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/"
   # Extract https://www.chiark.greenend.org.uk/~sgtatham/puzzles/puzzles.tar.gz to get the version number
-  url "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/puzzles-20191231.79a5378.tar.gz"
-  version "20191231"
-  sha256 "c3697593ce2dfdc742bec4cc55848c18c612b1fab8362d5003def834b7056dd2"
+  url "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/puzzles-20210526.8f3413c.tar.gz"
+  version "20210526"
+  sha256 "6c075a6ae2ab4131281fe07278d4daac6e9363142b65325f60cbf0660b532225"
   head "https://git.tartarus.org/simon/puzzles.git"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "f6e0a38c8a2af4c8479f8302fef1875d9ad49e1521bfe20a2d57b45b8082ced4" => :catalina
-    sha256 "f6e0a38c8a2af4c8479f8302fef1875d9ad49e1521bfe20a2d57b45b8082ced4" => :mojave
-    sha256 "832715efbc7a05c38a96a726d02327a28d24b944af247d4645a48cb35eef440f" => :high_sierra
+  # There's no directory listing page and the homepage only lists an unversioned
+  # tarball. The Git repository doesn't report any tags when we use that. The
+  # version in the footer of the first-party documentation seems to be the only
+  # available source that's up to date (as of writing).
+  livecheck do
+    url "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/"
+    regex(/version v?(\d{6,8})(?:\.[a-z0-9]+)?/i)
   end
 
-  depends_on "halibut"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "d086cbc56f4e840c2bd336078b1f7a0c99c396844445aa77a6aa2544278bec8f"
+    sha256 cellar: :any_skip_relocation, big_sur:       "07de30b3ea4890d3877dbb9e6a0041fb25bbe67d2cfc437d1dd69769cdac915d"
+    sha256 cellar: :any_skip_relocation, catalina:      "dd80a3fd46c2167b3159e9e8d39157c2a3938d67a04426418cd15b69ce058d7a"
+    sha256 cellar: :any_skip_relocation, mojave:        "82cd3f20a6e75482caef19754884c61c9fc8e6ba8bec8d23dc401cc721631007"
+  end
+
+  depends_on "cmake" => :build
+  depends_on "halibut" => :build
+
+  on_linux do
+    depends_on "imagemagick" => :build
+    depends_on "pkg-config" => :build
+    depends_on "cairo"
+    depends_on "gdk-pixbuf"
+    depends_on "glib"
+    depends_on "gtk+3"
+    depends_on "pango"
+  end
 
   def install
-    # Do not build for i386
-    inreplace "mkfiles.pl", /@osxarchs = .*/, "@osxarchs = ('x86_64');"
+    system "cmake", ".", *std_cmake_args
+    system "make", "install"
 
-    system "perl", "mkfiles.pl"
-    system "make", "-d", "-f", "Makefile.osx", "all"
-    prefix.install "Puzzles.app"
+    on_macos do
+      bin.write_exec_script prefix/"Puzzles.app/Contents/MacOS/Puzzles"
+    end
   end
 
   test do
-    assert_predicate prefix/"Puzzles.app/Contents/MacOS/Puzzles", :executable?
+    on_macos do
+      assert_predicate prefix/"Puzzles.app/Contents/MacOS/Puzzles", :executable?
+    end
+
+    on_linux do
+      assert_match "Mines, from Simon Tatham's Portable Puzzle Collection", shell_output(bin/"mines")
+    end
   end
 end

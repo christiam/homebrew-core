@@ -3,14 +3,16 @@ require "language/node"
 class AwsCdk < Formula
   desc "AWS Cloud Development Kit - framework for defining AWS infra as code"
   homepage "https://github.com/aws/aws-cdk"
-  url "https://registry.npmjs.org/aws-cdk/-/aws-cdk-1.19.0.tgz"
-  sha256 "3f0888a86901baefda9bb952a1f09a4ba29c3b2c512fc5860f6ecc8e90724557"
+  url "https://registry.npmjs.org/aws-cdk/-/aws-cdk-1.119.0.tgz"
+  sha256 "31678fbe18e23deecdbee4665f200712aca2ce9b52cd8f58e3a4b426bb718e20"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "79bf2f3d795a6856338085cf1c614d3d528801a71842899b71ec1922572d0ca1" => :catalina
-    sha256 "c4981547e2d647982326ef29dad1cb8c422e9504030621de9df253889d9d881d" => :mojave
-    sha256 "97e82ce41bc2dcdafe2d8b658dd63cbc3fe834dcbf6e0415f165683877b80401" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "079f8c46e0190795133add90929a5fb5bfd58db0a43bc240f57911eaaa65762f"
+    sha256 cellar: :any_skip_relocation, big_sur:       "6cf84b5dcc7b2d0349520161dd7c79f2b9e195bf62588e9345d6fb4121b7257f"
+    sha256 cellar: :any_skip_relocation, catalina:      "6cf84b5dcc7b2d0349520161dd7c79f2b9e195bf62588e9345d6fb4121b7257f"
+    sha256 cellar: :any_skip_relocation, mojave:        "6cf84b5dcc7b2d0349520161dd7c79f2b9e195bf62588e9345d6fb4121b7257f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "079f8c46e0190795133add90929a5fb5bfd58db0a43bc240f57911eaaa65762f"
   end
 
   depends_on "node"
@@ -21,12 +23,13 @@ class AwsCdk < Formula
   end
 
   test do
-    mkdir "testapp"
-    cd testpath/"testapp"
-    shell_output("#{bin}/cdk init app --language=javascript")
-    list = shell_output("#{bin}/cdk list")
-    cdkversion = shell_output("#{bin}/cdk --version")
-    assert_match "TestappStack", list
-    assert_match version.to_s, cdkversion
+    # `cdk init` cannot be run in a non-empty directory
+    mkdir "testapp" do
+      shell_output("#{bin}/cdk init app --language=javascript")
+      list = shell_output("#{bin}/cdk list")
+      cdkversion = shell_output("#{bin}/cdk --version")
+      assert_match "TestappStack", list
+      assert_match version.to_s, cdkversion
+    end
   end
 end

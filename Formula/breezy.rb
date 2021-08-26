@@ -3,20 +3,28 @@ class Breezy < Formula
 
   desc "Version control system implemented in Python with multi-format support"
   homepage "https://www.breezy-vcs.org"
-  url "https://files.pythonhosted.org/packages/6b/81/ae2ddb07ef93d62689a98b6b711394bfbe3e35c719253b18e6b84221d500/breezy-3.0.2.tar.gz"
-  sha256 "50f16bc7faf299f98fe58573da55b0664078f94b1a0e7f0ce9e1e6a0d47e68e0"
+  url "https://files.pythonhosted.org/packages/e4/93/101bb70d7e6c171c7a3a99d50d9f9b64a17a5845cfd6c8ecb95d844bac68/breezy-3.2.1.tar.gz"
+  sha256 "e0b268eb1a28a2af045280c37d021ae32d7ff175f4c9b99f33aad7db0b29d85c"
+  license "GPL-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "e06627d654c6610734e326fe0ef7203b5bb37bfd60af14dbda48e755ccec4372" => :catalina
-    sha256 "1c37188d399bcc580b85b4d433831c3efc1241ba79e4af173ad3d896e236ac77" => :mojave
-    sha256 "e1b965da5e13778f78f29d2835954f2aa15eba430dc9a928339ad9834783d73f" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "91ac24be8f4fc563cff558d5d4d08e176235a9ad5510c0ecf2af6790e4ecf27c"
+    sha256 cellar: :any_skip_relocation, big_sur:       "b83446c114ad82d91da5614176a13a4991da60179e83d2f24e17c3d004a30e46"
+    sha256 cellar: :any_skip_relocation, catalina:      "4cd007f23c658ae903a52be4454c29b82abd70d5a43aabc61b71ef6b2dd710c9"
+    sha256 cellar: :any_skip_relocation, mojave:        "7643ca66430fec0bb7d285f76a0912622fb50b171b264a6beb695f414c765796"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "c375279c3a764e7a63935d7f3d838916bbcfab732c61cf2ff6dc3fc085b63ac2"
   end
 
   depends_on "cython" => :build
   depends_on "gettext" => :build
   depends_on "openssl@1.1"
-  depends_on "python"
+  depends_on "python@3.9"
+  depends_on "six"
+
+  resource "certifi" do
+    url "https://files.pythonhosted.org/packages/6d/78/f8db8d57f520a54f0b8a438319c342c61c22759d8f9a1cd2e2180b5e5ea9/certifi-2021.5.30.tar.gz"
+    sha256 "2bbf76fd432960138b3ef6dda3dde0544f27cbf8546c458e60baf371917ba9ee"
+  end
 
   resource "configobj" do
     url "https://files.pythonhosted.org/packages/64/61/079eb60459c44929e684fa7d9e2fdca403f67d64dd9dbac27296be2e0fab/configobj-5.0.6.tar.gz"
@@ -24,28 +32,18 @@ class Breezy < Formula
   end
 
   resource "dulwich" do
-    url "https://files.pythonhosted.org/packages/44/26/d0c3930418e57e79f30766fe1dd536a8863fe3e443efaf6574e66d33264a/dulwich-0.19.13.tar.gz"
-    sha256 "aa628449c5f594a9a282f4d9e5993fef65481ef5e3b9b6c52ff31200f8f5dc95"
+    url "https://files.pythonhosted.org/packages/85/f1/eab86c0058d2195ec084dd200c3e4179871e13e4f38f17ff3f6c7dee3c56/dulwich-0.20.23.tar.gz"
+    sha256 "402e56b5c07f040479d1188e5c2f406e2c006aa3943080155d4c6d05e5fca865"
   end
 
-  resource "paramiko" do
-    url "https://files.pythonhosted.org/packages/54/68/dde7919279d4ecdd1607a7eb425a2874ccd49a73a5a71f8aa4f0102d3eb8/paramiko-2.6.0.tar.gz"
-    sha256 "f4b2edfa0d226b70bd4ca31ea7e389325990283da23465d572ed1f70a7583041"
-  end
-
-  resource "pycrypto" do
-    url "https://files.pythonhosted.org/packages/60/db/645aa9af249f059cc3a368b118de33889219e0362141e75d4eaf6f80f163/pycrypto-2.6.1.tar.gz"
-    sha256 "f2ce1e989b272cfcb677616763e0a2e7ec659effa67a88aa92b3a65528f60a3c"
-  end
-
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/94/3e/edcf6fef41d89187df7e38e868b2dd2182677922b600e880baad7749c865/six-1.13.0.tar.gz"
-    sha256 "30f610279e8b2578cab6db20741130331735c781b56053c59c4076da27f06b66"
+  resource "patiencediff" do
+    url "https://files.pythonhosted.org/packages/90/ca/13cdabb3c491a0ccd7d580419b96abce3d227d4a6ba674364e6b19d4d67e/patiencediff-0.2.2.tar.gz"
+    sha256 "456d9fc47fe43f9aea863059ea2c6df5b997285590e4b7f9ee8fbb6c3419b5a7"
   end
 
   resource "urllib3" do
-    url "https://files.pythonhosted.org/packages/ad/fc/54d62fa4fc6e675678f9519e677dfc29b8964278d75333cf142892caf015/urllib3-1.25.7.tar.gz"
-    sha256 "f3c5fd51747d450d4dcf6f923c81f78f811aab8205fda64b0aba34a4e48b0745"
+    url "https://files.pythonhosted.org/packages/4f/5a/597ef5911cb8919efe4d86206aa8b2658616d676a7088f0825ca08bd7cb8/urllib3-1.26.6.tar.gz"
+    sha256 "f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"
   end
 
   def install

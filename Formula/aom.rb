@@ -2,15 +2,16 @@ class Aom < Formula
   desc "Codec library for encoding and decoding AV1 video streams"
   homepage "https://aomedia.googlesource.com/aom"
   url "https://aomedia.googlesource.com/aom.git",
-      :tag      => "v1.0.0",
-      :revision => "d14c5bb4f336ef1842046089849dee4a301fbbf0"
+      tag:      "v3.1.2",
+      revision: "ae2be8030200925895fa6e98bd274ffdb595cbf6"
+  license "BSD-2-Clause"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "1c49d2f8eee438f057d689a3ac68af545e4462ebd2db2fdd9a749fb6a1842da7" => :catalina
-    sha256 "f326a5ea77c38ea80d81c6302d6e2d314a7407d036f881bf4783cf3d757bb473" => :mojave
-    sha256 "fedb7991299e8e84ed4ce94ad3cc161951aa10d3044fc9446009046d17eb1e2f" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "cab48a0f87dce96cd34be83f306c76b1b12ffdc36924f66db4e5b23c7d02ed9b"
+    sha256 cellar: :any,                 big_sur:       "7caa96eb1b5ffed1e77fd7bf287b8aee925a415a462209228800ad1d18b34a0f"
+    sha256 cellar: :any,                 catalina:      "8755252819aa338bb5992e88e88f13e9f0e9b6b6d4bcea909fbd772d6eb80f02"
+    sha256 cellar: :any,                 mojave:        "104a6c66a752c4d245830922658adaf9b0f47a4036089141d25ca6ff46ccbe92"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "4445426d87356c91869cce415d85c3d8bb63cdbab52ec3696e439ffce825be8a"
   end
 
   depends_on "cmake" => :build
@@ -22,17 +23,17 @@ class Aom < Formula
   end
 
   def install
-    # Work around Xcode 11 clang bug
-    # https://bitbucket.org/multicoreware/x265/issues/514/wrong-code-generated-on-macos-1015
-    ENV.append_to_cflags "-fno-stack-check" if DevelopmentTools.clang_build_version >= 1010
-
     mkdir "macbuild" do
-      system "cmake", "..", *std_cmake_args,
-                      "-DENABLE_DOCS=off",
-                      "-DENABLE_EXAMPLES=on",
-                      "-DENABLE_TESTDATA=off",
-                      "-DENABLE_TESTS=off",
-                      "-DENABLE_TOOLS=off"
+      args = std_cmake_args.concat(["-DCMAKE_INSTALL_RPATH=#{rpath}",
+                                    "-DENABLE_DOCS=off",
+                                    "-DENABLE_EXAMPLES=on",
+                                    "-DENABLE_TESTDATA=off",
+                                    "-DENABLE_TESTS=off",
+                                    "-DENABLE_TOOLS=off",
+                                    "-DBUILD_SHARED_LIBS=on"])
+      # Runtime CPU detection is not currently enabled for ARM on macOS.
+      args << "-DCONFIG_RUNTIME_CPU_DETECT=0" if Hardware::CPU.arm?
+      system "cmake", "..", *args
 
       system "make", "install"
     end

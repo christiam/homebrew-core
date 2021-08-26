@@ -1,25 +1,44 @@
 class Ledger < Formula
   desc "Command-line, double-entry accounting tool"
   homepage "https://ledger-cli.org/"
-  url "https://github.com/ledger/ledger/archive/v3.1.3.tar.gz"
-  sha256 "b248c91d65c7a101b9d6226025f2b4bf3dabe94c0c49ab6d51ce84a22a39622b"
-  revision 4
+  url "https://github.com/ledger/ledger/archive/v3.2.1.tar.gz"
+  sha256 "92bf09bc385b171987f456fe3ee9fa998ed5e40b97b3acdd562b663aa364384a"
+  license "BSD-3-Clause"
+  revision 6
   head "https://github.com/ledger/ledger.git"
 
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+
   bottle do
-    sha256 "9b9be8385bbf69fcd7e910bce409f97c08542b89aecacde4d615d5a5ca9af65c" => :catalina
-    sha256 "f36940017c56792a42d010b1b1094d355575adb4d51f74acaf4ea8e57024aba0" => :mojave
-    sha256 "a8313d55f2a5070ac82c01260c11a77273c5dc6d0ee2c38d06eb0b9a143cb5cb" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "7c4c05ee4ba9fa1eb98e13dd8fdb08204847051d60235d7ed41acb511bc59e88"
+    sha256 cellar: :any,                 big_sur:       "b38e4088c5c4639db36583dee90969851ce3a6dd697542f40c35c4fd4a26ba63"
+    sha256 cellar: :any,                 catalina:      "4bf9603c5db081f8264ab20d48f5b3b7c00760032a69da857be8412c8fc7f538"
+    sha256 cellar: :any,                 mojave:        "73e2a88b71ad45ce03bb552889c615f552415332e5602711608a0a3aead94c8e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "2900cd872e239fe43409bbe4e07546897f1785e56f91059edfafcbef118c2c07"
   end
 
   depends_on "cmake" => :build
   depends_on "boost"
   depends_on "gmp"
   depends_on "mpfr"
-  uses_from_macos "python@2"
+  depends_on "python@3.9"
+
+  uses_from_macos "groff"
+
+  # Compatibility with Boost 1.76
+  # https://github.com/ledger/ledger/issues/2030
+  # https://github.com/ledger/ledger/pull/2036
+  patch do
+    url "https://github.com/ledger/ledger/commit/e60717ccd78077fe4635315cb2657d1a7f539fca.patch?full_index=1"
+    sha256 "edba1dd7bde707f510450db3197922a77102d5361ed7a5283eb546fbf2221495"
+  end
 
   def install
     ENV.cxx11
+    ENV.prepend_path "PATH", Formula["python@3.9"].opt_libexec/"bin"
 
     args = %W[
       --jobs=#{ENV.make_jobs}
@@ -30,7 +49,8 @@ class Ledger < Formula
       -DBUILD_DOCS=1
       -DBUILD_WEB_DOCS=1
       -DBoost_NO_BOOST_CMAKE=ON
-    ]
+      -DPython_FIND_VERSION_MAJOR=3
+    ] + std_cmake_args
     system "./acprep", "opt", "make", *args
     system "./acprep", "opt", "make", "doc", *args
     system "./acprep", "opt", "make", "install", *args

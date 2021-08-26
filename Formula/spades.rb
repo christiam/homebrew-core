@@ -1,26 +1,47 @@
 class Spades < Formula
+  include Language::Python::Shebang
+
   desc "De novo genome sequence assembly"
-  homepage "http://cab.spbu.ru/software/spades/"
-  url "http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1.tar.gz"
-  mirror "https://github.com/ablab/spades/releases/download/v3.13.1/SPAdes-3.13.1.tar.gz"
-  sha256 "8da29b72fb56170dd39e3a8ea5074071a8fa63b29346874010b8d293c2f72a3e"
+  homepage "https://cab.spbu.ru/software/spades/"
+  url "https://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3.tar.gz"
+  mirror "https://github.com/ablab/spades/releases/download/v3.15.3/SPAdes-3.15.3.tar.gz"
+  sha256 "b2e5a9fd7a65aee5ab886222d6af4f7b7bc7f755da7a03941571fabd6b9e1499"
+  license "GPL-2.0-only"
+
+  livecheck do
+    url "https://cab.spbu.ru/files/?C=M&O=D"
+    regex(%r{href=.*?release(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "4761b8cfbaca36fdc4fac08b8122f5519415d86668355224a67c52a5191ae7c5" => :catalina
-    sha256 "f3e29120ab665892ba68d2d7c7522b1fea866a2d405f59547071d8c6c31318c8" => :high_sierra
+    sha256 cellar: :any_skip_relocation, big_sur:      "1709900ba50cdaec70d864c3b7f6c68eaa4e7396055abc6fe540e3529296d84b"
+    sha256 cellar: :any_skip_relocation, catalina:     "07c4724e3a1236f19f6c9a7899077035c17501f1581838428849fc9ec8d25d78"
+    sha256 cellar: :any_skip_relocation, mojave:       "6efc26bfefb204c0ed9370b2d46a2ec0e12c999b6f150d3e2a22c2d38e15d93d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "aa82716b39775ce1f1a5961aad0322514723e92138f9f525db36bc389d47f694"
   end
 
   depends_on "cmake" => :build
-  depends_on "gcc"
+  depends_on "python@3.9"
 
-  fails_with :clang # no OpenMP support
+  uses_from_macos "bzip2"
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
+
+  on_macos do
+    depends_on "libomp"
+  end
+
+  on_linux do
+    depends_on "jemalloc"
+    depends_on "readline"
+  end
 
   def install
     mkdir "src/build" do
       system "cmake", "..", *std_cmake_args
       system "make", "install"
     end
+    bin.find { |f| rewrite_shebang detected_python_shebang, f }
   end
 
   test do

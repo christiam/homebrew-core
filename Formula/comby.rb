@@ -1,20 +1,30 @@
 class Comby < Formula
   desc "Tool for changing code across many languages"
   homepage "https://comby.dev"
-  url "https://github.com/comby-tools/comby/archive/0.12.0.tar.gz"
-  sha256 "ec0808c59bb7733dd5ba515147895db5f5820a5333fcd479f3091ea0b6a5519e"
+  url "https://github.com/comby-tools/comby/archive/1.7.0.tar.gz"
+  sha256 "fd1351d534c905774ceb4b1e908d81e67eeff007c8b9c4a28fe145e85c7c5f5d"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any
-    sha256 "9af7377e3a37fbbc19896b40a61dc5718396a080d752c3a9557b0b3e3faf96d7" => :catalina
-    sha256 "d1d4351daf973c806da71fa970986837a6bf2ed0897f6178ad6909a2bc089f78" => :mojave
-    sha256 "2741164707a47a18d9a750420d306730825332098be73f7eb02f29530f8b74aa" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "e69e426df9a510b7cad1d678a8f52f6f81a695d0c93cac191eee88e80d83e6a0"
+    sha256 cellar: :any, big_sur:       "80f3ea766ee4112f5ce4078ad71d6baea73d21399e1fd1ba333284c39ebe5db6"
+    sha256 cellar: :any, catalina:      "5cb7e5544575697571c82f1f6d480f93e1c9cbc8ca74006f6cb147ccb3a1b48c"
+    sha256 cellar: :any, mojave:        "aecfaad20f49d0ad545a4f4cb7ebd6056371f40804490c9ae38804669e9a73d7"
+    sha256               x86_64_linux:  "d61e66ffead20155383921643c2e4c95ad49c2e845b0e5476250052ab1530763"
   end
 
+  depends_on "autoconf" => :build
   depends_on "gmp" => :build
+  depends_on "ocaml" => :build
   depends_on "opam" => :build
+  depends_on "pkg-config" => :build
+  depends_on "gmp"
+  depends_on "libev"
   depends_on "pcre"
-  depends_on "pkg-config"
+
+  uses_from_macos "m4"
+  uses_from_macos "sqlite"
+  uses_from_macos "unzip"
   uses_from_macos "zlib"
 
   def install
@@ -23,15 +33,16 @@ class Comby < Formula
     ENV["OPAMROOT"] = opamroot
     ENV["OPAMYES"] = "1"
 
-    system "opam", "init", "--no-setup", "--disable-sandboxing", "--compiler=4.09.0", "--jobs=1"
+    system "opam", "init", "--no-setup", "--disable-sandboxing"
     system "opam", "config", "exec", "--", "opam", "install", ".", "--deps-only", "-y"
+
+    ENV.prepend_path "LIBRARY_PATH", opamroot/"default/lib/hack_parallel" # for -lhp
     system "opam", "config", "exec", "--", "make", "release"
+
     bin.install "_build/default/src/main.exe" => "comby"
   end
 
   test do
-    assert_equal "0.12.0", shell_output("#{bin}/comby -version").strip
-
     expect = <<~EXPECT
       --- /dev/null
       +++ /dev/null

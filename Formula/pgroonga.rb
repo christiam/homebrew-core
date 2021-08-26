@@ -1,14 +1,20 @@
 class Pgroonga < Formula
   desc "PostgreSQL plugin to use Groonga as index"
   homepage "https://pgroonga.github.io/"
-  url "https://packages.groonga.org/source/pgroonga/pgroonga-2.2.2.tar.gz"
-  sha256 "d5a010c8adc68e026b5e8298fc0d707c81ec0c847c9a97cb4a36bc132f15bf5d"
+  url "https://packages.groonga.org/source/pgroonga/pgroonga-2.3.1.tar.gz"
+  sha256 "832c8a0ab4735f207f528abfbac9e686bca09df6190bd9fc96a2e0af1714206c"
+  license "PostgreSQL"
+
+  livecheck do
+    url "https://packages.groonga.org/source/pgroonga/"
+    regex(/href=.*?pgroonga[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "b44a4ace1580f94346ef0e14a2194ebe47246e023c42e5a7f2571b52ec2b156b" => :catalina
-    sha256 "53a14b9e8754907ebce4b69b3906f49186bebd8c61f1b875ce62e0c5ef987e5b" => :mojave
-    sha256 "4f1bd67d861b575979c957edeb9dc2cbd4a310cdfc9be4cfdf4019737a01cdf9" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "965c4bc5b92d99b8a98c2743248447d0260d2925c7d50c8717255d0502bcd676"
+    sha256 cellar: :any, big_sur:       "fe3c58f82c97e7da2c0889b4a3dd3de817fc6c48627970b5aa65d28d208417f5"
+    sha256 cellar: :any, catalina:      "7917e151527fb4dbd97ce7788723c25b2612bf6c565c3057d58d3aaec19e0fd7"
+    sha256 cellar: :any, mojave:        "31ebc734c68b5fa6f43ff20e8becc7c1b6ba3423445b10127e261a662300b573"
   end
 
   depends_on "pkg-config" => :build
@@ -22,22 +28,5 @@ class Pgroonga < Formula
 
     lib.install Dir["stage/**/lib/*"]
     (share/"postgresql/extension").install Dir["stage/**/share/postgresql/extension/*"]
-  end
-
-  test do
-    pg_bin = Formula["postgresql"].opt_bin
-    pg_port = "55561"
-    system "#{pg_bin}/initdb", testpath/"test"
-    pid = fork { exec "#{pg_bin}/postgres", "-D", testpath/"test", "-p", pg_port }
-
-    begin
-      sleep 2
-      system "#{pg_bin}/createdb", "-p", pg_port
-      system "#{pg_bin}/psql", "-p", pg_port, "--command", "CREATE DATABASE test;"
-      system "#{pg_bin}/psql", "-p", pg_port, "-d", "test", "--command", "CREATE EXTENSION pgroonga;"
-    ensure
-      Process.kill 9, pid
-      Process.wait pid
-    end
   end
 end

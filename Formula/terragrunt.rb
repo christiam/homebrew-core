@@ -1,28 +1,25 @@
 class Terragrunt < Formula
   desc "Thin wrapper for Terraform e.g. for locking state"
-  homepage "https://github.com/gruntwork-io/terragrunt"
-  url "https://github.com/gruntwork-io/terragrunt.git",
-    :tag      => "v0.21.10",
-    :revision => "7f563c6fe3abe41764aff642f01edc180288a9af"
+  homepage "https://terragrunt.gruntwork.io/"
+  url "https://github.com/gruntwork-io/terragrunt/archive/v0.31.6.tar.gz"
+  sha256 "80cd470c2078b368fb707348794f1afe20558a0c31a1b7685d966e904e2029b1"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "116e39aae20dfdfb04844d9bdfb680130dc34c005d46bdc5b835d2c29cfc2556" => :catalina
-    sha256 "dbef2c3c3549dda6e25ea84670025bc598158adc54e81e044d099a028aa7c0e0" => :mojave
-    sha256 "194c374e2da8517e0144fde32f2d8061f3bce805bd7b868b7dddb5d0ac0d1ff5" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "4e44590345961e23ce1697398cf7ac1633c3d7662178ef2fe4ff0cb5a17d4094"
+    sha256 cellar: :any_skip_relocation, big_sur:       "c14385427e83466dcf0e5b4ba9522446f4a06ef6874bc824e373b37aa1faf943"
+    sha256 cellar: :any_skip_relocation, catalina:      "71d6e3b857c925a5f254c29c34db04122fd8b0f40d9e48b05839de44943f9157"
+    sha256 cellar: :any_skip_relocation, mojave:        "6ad7ec491c2216713554bb4feea46145add088547c14323ee8f67e1be7ab78b6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "1b40134f4d190402d42f157d1e2ff36789f04e26305f25ca4e46b8b72aa23bf8"
   end
 
-  depends_on "dep" => :build
   depends_on "go" => :build
   depends_on "terraform"
 
+  conflicts_with "tgenv", because: "tgenv symlinks terragrunt binaries"
+
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/gruntwork-io/terragrunt").install buildpath.children
-    cd "src/github.com/gruntwork-io/terragrunt" do
-      system "dep", "ensure", "-vendor-only"
-      system "go", "build", "-o", bin/"terragrunt", "-ldflags", "-X main.VERSION=v#{version}"
-    end
+    system "go", "build", *std_go_args(ldflags: "-s -w -X main.VERSION=v#{version}")
   end
 
   test do

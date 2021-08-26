@@ -1,15 +1,20 @@
 class VapoursynthOcr < Formula
   desc "VapourSynth filters - Tesseract OCR filter"
   homepage "http://www.vapoursynth.com"
-  url "https://github.com/vapoursynth/vapoursynth/archive/R48.tar.gz"
-  sha256 "3e98d134e16af894cf7040e4383e4ef753cafede34d5d77c42a2bb89790c50a8"
-  head "https://github.com/vapoursynth/vapoursynth.git"
+  url "https://github.com/vapoursynth/vapoursynth/archive/R54.tar.gz"
+  sha256 "ad0c446adcb3877c253dc8c1372a053ad35022bcf42600889b927d2797c5330b"
+  license "ISC"
+  head "https://github.com/vapoursynth/vapoursynth.git", branch: "master"
+
+  livecheck do
+    formula "vapoursynth"
+  end
 
   bottle do
-    cellar :any
-    sha256 "c894f8d87246e2c0589b928f628ee7298af63e753ccb280ed80c1513773d569e" => :catalina
-    sha256 "7ab0e793a388da6609c1857b8b16479952e1765f3fd3133dc82184cc0700a048" => :mojave
-    sha256 "d1df199256931db3d1a1bc84c60496b2f4426aa9a5567556ca12dbcb31ee91a4" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "0ee61239f71e594c05f6a93b675b9863ab53227715c355ef9b75ca1f92e577d5"
+    sha256 cellar: :any, big_sur:       "c73eea38acf6dde0e271aa71393020d8f76c9c1c48607048c14b2ca53616d629"
+    sha256 cellar: :any, catalina:      "939098378976ede311e6b3158928a64bdf2fc1283655c2349501bec9bcd3d2d8"
+    sha256 cellar: :any, mojave:        "708071510107a61e077d3ff47019c32120c65cfcc91e8265ae2e692f04d490f3"
   end
 
   depends_on "autoconf" => :build
@@ -17,7 +22,6 @@ class VapoursynthOcr < Formula
   depends_on "libtool" => :build
   depends_on "nasm" => :build
   depends_on "pkg-config" => :build
-
   depends_on "tesseract"
   depends_on "vapoursynth"
 
@@ -39,8 +43,8 @@ class VapoursynthOcr < Formula
   end
 
   test do
-    py3 = Language::Python.major_minor_version "python3"
-    ENV.prepend_path "PYTHONPATH", lib/"python#{py3}/site-packages"
-    system "python3", "-c", "from vapoursynth import core; core.ocr"
+    xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+    ENV.prepend_path "PYTHONPATH", lib/"python#{xy}/site-packages"
+    system Formula["python@3.9"].opt_bin/"python3", "-c", "from vapoursynth import core; core.ocr"
   end
 end

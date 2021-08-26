@@ -1,16 +1,32 @@
 class Wandio < Formula
   desc "Transparently read from and write to zip, bzip2, lzma or zstd archives"
   homepage "https://research.wand.net.nz/software/libwandio.php"
-  url "https://research.wand.net.nz/software/wandio/wandio-4.2.2.tar.gz"
-  sha256 "1196f3a4fc36cc886e71dcd13f542d3648dad989dbe53bc81ec35da19cc8fbbc"
+  url "https://research.wand.net.nz/software/wandio/wandio-4.2.3.tar.gz"
+  sha256 "78c781ce2c3783b85d894e29005b7e98fc246b33f94616047de3bb4d11d4d823"
+  license "LGPL-3.0-or-later"
+  revision 1
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?wandio[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "dc91ef0f03bfc027c7921a132c92ef7b9e768307050742b6ff9543998a786f6b" => :catalina
-    sha256 "02cce1059503c0fa2051661ab8075e62c279aeb8a761d408ef2dd4ab7545a6b6" => :mojave
-    sha256 "0dbb3e5ddd4fc6de440174d2667d8453f3f4136d6dba0d3f6cc58f15537ff9d7" => :high_sierra
-    sha256 "98922801f17e30f8aa0685ba4fd2b4a21b46ab53ad1a71f7f39f28fa7cbc2186" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "561c437e4a6521dca50fddd9a0099be26e0b4382c208866514a9fd921d10b76e"
+    sha256 cellar: :any,                 big_sur:       "5ebf117a69a7e0fdb352d3b9ec31d1c58c775f9554ae1c8aad536d791a001e52"
+    sha256 cellar: :any,                 catalina:      "2315e97da8b41e130ce44790da94a692b7125b4feede7d6becec880b68178b21"
+    sha256 cellar: :any,                 mojave:        "fe2c352b368e3e440f5ddfdbce45002c849a7446d056dfe4f542a28cd06c1aab"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "ee249f1f58477936bc3e6b87cf9a41eed6f28dac996a5482b13e6f9f63aac0ff"
   end
+
+  depends_on "lz4"
+  depends_on "lzo"
+  depends_on "xz" # For LZMA
+  depends_on "zstd"
+
+  uses_from_macos "bzip2"
+  uses_from_macos "curl"
+  uses_from_macos "zlib"
 
   def install
     system "./configure", "--with-http",
@@ -21,7 +37,8 @@ class Wandio < Formula
   end
 
   test do
-    system "#{bin}/wandiocat", "-z", "9", "-Z", "gzip", "-o", "test.gz", test_fixtures("test.png"), test_fixtures("test.pdf")
+    system "#{bin}/wandiocat", "-z", "9", "-Z", "gzip", "-o", "test.gz",
+      test_fixtures("test.png"), test_fixtures("test.pdf")
     assert_predicate testpath/"test.gz", :exist?
   end
 end

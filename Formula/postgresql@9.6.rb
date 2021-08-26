@@ -1,19 +1,40 @@
 class PostgresqlAT96 < Formula
   desc "Object-relational database system"
   homepage "https://www.postgresql.org/"
-  url "https://ftp.postgresql.org/pub/source/v9.6.16/postgresql-9.6.16.tar.bz2"
-  sha256 "5c6cba9cc0df70ba2b128c4a87d0babfce7c0e2b888f70a9c8485745f66b22e7"
+  url "https://ftp.postgresql.org/pub/source/v9.6.23/postgresql-9.6.23.tar.bz2"
+  sha256 "a849f798401ab8c6dfa653ebbcd853b43f2200b4e3bc1ea3cb5bec9a691947b9"
+  license "PostgreSQL"
+
+  livecheck do
+    url "https://ftp.postgresql.org/pub/source/"
+    regex(%r{href=["']?v?(9\.6(?:\.\d+)*)/?["' >]}i)
+  end
 
   bottle do
-    sha256 "05db3ed53ae022f07a424cdd5495f1fc014823826a040bffce822525307f821c" => :catalina
-    sha256 "f159342e1bf54935f9fad298f38fa2b860ae01c65e8325f7d1fae9ab6c81410a" => :mojave
-    sha256 "5cb677d78de78977268e13b421bee6f1057760ea1b0f1be35bc80a64c3665714" => :high_sierra
+    sha256 arm64_big_sur: "0f79f7033fdb3a2491e28964e60c053f9c4fdc195a85f0ea67abb469cc8e0ef7"
+    sha256 big_sur:       "324c559bf6e31496384cd8896329535919e6a8b2235401f59520c57f6d44d6c9"
+    sha256 catalina:      "624cb85c66f1a6552dcb0ac23209d55411294b2913824ec864dbf10d2e92b569"
+    sha256 mojave:        "23fdcd093f470661f6d1d663d8f5c1d63a409412ab0eaa14df8460c4c61ea52b"
+    sha256 x86_64_linux:  "c761cc7491f2b55ad34c4242aac3a4574ecb15e8a7a0420e9db80cc90fdba063"
   end
 
   keg_only :versioned_formula
 
+  # https://www.postgresql.org/support/versioning/
+  deprecate! date: "2021-11-11", because: :unsupported
+
   depends_on "openssl@1.1"
   depends_on "readline"
+
+  uses_from_macos "krb5"
+  uses_from_macos "libxslt"
+  uses_from_macos "openldap"
+  uses_from_macos "perl"
+
+  on_linux do
+    depends_on "linux-pam"
+    depends_on "util-linux"
+  end
 
   def install
     # avoid adding the SDK library directory to the linker search path
@@ -30,39 +51,25 @@ class PostgresqlAT96 < Formula
       --sysconfdir=#{prefix}/etc
       --docdir=#{doc}
       --enable-thread-safety
-      --with-bonjour
       --with-gssapi
       --with-ldap
-      --with-openssl
-      --with-pam
       --with-libxml
       --with-libxslt
+      --with-openssl
+      --with-pam
       --with-perl
       --with-uuid=e2fs
     ]
-
-    # The CLT is required to build Tcl support on 10.7 and 10.8 because
-    # tclConfig.sh is not part of the SDK
-    args << "--with-tcl"
-    if File.exist?("#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework/tclConfig.sh")
-      args << "--with-tclconfig=#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework"
+    on_macos do
+      args += %w[
+        --with-bonjour
+        --with-tcl
+      ]
     end
 
-    # As of Xcode/CLT 10.x the Perl headers were moved from /System
-    # to inside the SDK, so we need to use `-iwithsysroot` instead
-    # of `-I` to point to the correct location.
-    # https://www.postgresql.org/message-id/153558865647.1483.573481613491501077%40wrigleys.postgresql.org
-    if DevelopmentTools.clang_build_version >= 1000
-      inreplace "configure",
-                "-I$perl_archlibexp/CORE",
-                "-iwithsysroot $perl_archlibexp/CORE"
-      inreplace "contrib/hstore_plperl/Makefile",
-                "$(perl_archlibexp)/CORE",
-                "-iwithsysroot $(perl_archlibexp)/CORE"
-      inreplace "src/pl/plperl/GNUmakefile",
-                "$(perl_archlibexp)/CORE",
-                "-iwithsysroot $(perl_archlibexp)/CORE"
-    end
+    # PostgreSQL by default uses xcodebuild internally to determine this,
+    # which does not work on CLT-only installs.
+    args << "PG_SYSROOT=#{MacOS.sdk_path}" if MacOS.sdk_root_needed?
 
     system "./configure", *args
     system "make"
@@ -77,69 +84,71 @@ class PostgresqlAT96 < Formula
     # Attempting to fix that by adding a dependency on `open-sp` doesn't
     # work and the build errors out on generating the documentation, so
     # for now let's simply omit it so we can package Postgresql for Mojave.
-    if DevelopmentTools.clang_build_version >= 1000
+    on_macos do
+      if DevelopmentTools.clang_build_version >= 1000
+        system "make", "all"
+        system "make", "-C", "contrib", "install", "all", *dirs
+        system "make", "install", "all", *dirs
+      else
+        system "make", "install-world", *dirs
+      end
+    end
+    on_linux do
       system "make", "all"
       system "make", "-C", "contrib", "install", "all", *dirs
       system "make", "install", "all", *dirs
-    else
-      system "make", "install-world", *dirs
+      inreplace lib/"pgxs/src/Makefile.global",
+                "LD = #{HOMEBREW_PREFIX}/Homebrew/Library/Homebrew/shims/linux/super/ld",
+                "LD = #{HOMEBREW_PREFIX}/bin/ld"
     end
   end
 
   def post_install
     (var/"log").mkpath
-    (var/name).mkpath
-    unless File.exist? "#{var}/#{name}/PG_VERSION"
-      system "#{bin}/initdb", "#{var}/#{name}"
-    end
+    postgresql_datadir.mkpath
+
+    # Don't initialize database, it clashes when testing other PostgreSQL versions.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
+    postgresql_datadir.mkpath
+    system "#{bin}/initdb", postgresql_datadir unless pg_version_exists?
   end
 
-  def caveats; <<~EOS
-    If builds of PostgreSQL 9 are failing and you have version 8.x installed,
-    you may need to remove the previous version first. See:
-      https://github.com/Homebrew/legacy-homebrew/issues/2510
-
-    To migrate existing data from a previous major version (pre-9.0) of PostgreSQL, see:
-      https://www.postgresql.org/docs/9.6/static/upgrading.html
-
-    To migrate existing data from a previous minor version (9.0-9.5) of PostgreSQL, see:
-      https://www.postgresql.org/docs/9.6/static/pgupgrade.html
-
-      You will need your previous PostgreSQL installation from brew to perform `pg_upgrade`.
-        Do not run `brew cleanup postgresql@9.6` until you have performed the migration.
-  EOS
+  def postgresql_datadir
+    var/name
   end
 
-  plist_options :manual => "pg_ctl -D #{HOMEBREW_PREFIX}/var/postgresql@9.6 start"
+  def postgresql_log_path
+    var/"log/#{name}.log"
+  end
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/postgres</string>
-        <string>-D</string>
-        <string>#{var}/#{name}</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{HOMEBREW_PREFIX}</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/log/#{name}.log</string>
-    </dict>
-    </plist>
-  EOS
+  def pg_version_exists?
+    (postgresql_datadir/"PG_VERSION").exist?
+  end
+
+  def caveats
+    <<~EOS
+      If builds of PostgreSQL 9 are failing and you have version 8.x installed,
+      you may need to remove the previous version first. See:
+        https://github.com/Homebrew/legacy-homebrew/issues/2510
+
+      This formula has created a default database cluster with:
+        initdb #{postgresql_datadir}
+      For more details, read:
+        https://www.postgresql.org/docs/#{version.major}/app-initdb.html
+    EOS
+  end
+
+  service do
+    run [opt_bin/"postgres", "-D", var/"postgresql@9.6"]
+    keep_alive true
+    log_path var/"log/postgresql@9.6.log"
+    error_log_path var/"log/postgresql@9.6.log"
+    working_dir HOMEBREW_PREFIX
   end
 
   test do
-    system "#{bin}/initdb", testpath/"test"
+    system "#{bin}/initdb", testpath/"test" unless ENV["HOMEBREW_GITHUB_ACTIONS"]
     assert_equal pkgshare.to_s, shell_output("#{bin}/pg_config --sharedir").chomp
     assert_equal lib.to_s, shell_output("#{bin}/pg_config --libdir").chomp
     assert_equal lib.to_s, shell_output("#{bin}/pg_config --pkglibdir").chomp

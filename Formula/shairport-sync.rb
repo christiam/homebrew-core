@@ -1,14 +1,22 @@
 class ShairportSync < Formula
   desc "AirTunes emulator that adds multi-room capability"
   homepage "https://github.com/mikebrady/shairport-sync"
-  url "https://github.com/mikebrady/shairport-sync/archive/3.3.5.tar.gz"
-  sha256 "9757dd7f19c0bc28cb06a6753305c3ed89da2d271d069b36d1b12173309c1459"
-  head "https://github.com/mikebrady/shairport-sync.git", :branch => "development"
+  url "https://github.com/mikebrady/shairport-sync/archive/3.3.8.tar.gz"
+  sha256 "c92f9a2d86dd1138673abc66e0010c94412ad6a46da8f36c3d538f4fa6b9faca"
+  license "MIT"
+  head "https://github.com/mikebrady/shairport-sync.git", branch: "master"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "9f5d751be1792a249b4c52d68ddca6e2680235f3e076902993aef5f916954b6b" => :catalina
-    sha256 "c74ebdc84786fb9d1d07a079c34a96c30c6dcdfd315e7335bc0686b4c736291c" => :mojave
-    sha256 "b905286034c6bf40d77b1267b4fd8eae1af2158e7b11c91e46d1ffbc43dcf65b" => :high_sierra
+    rebuild 1
+    sha256 arm64_big_sur: "c62b136c5fcc95dd97a1ac76e100ecf91b546a5ab88a169051d772bedc2e6a20"
+    sha256 big_sur:       "539e6ac514499bb752fa3bc5621f2851abaec22822f9471a59b8520b6f89550e"
+    sha256 catalina:      "1bd4a19140ae1361a0bff75f52a0fd0d44017333d1caffbe9d71a3dbde7e9eee"
+    sha256 mojave:        "87beee235a4af62b1bd7971a97ed011b23ee0d553eccea22e045130c6927e061"
   end
 
   depends_on "autoconf" => :build
@@ -45,6 +53,13 @@ class ShairportSync < Formula
 
   def post_install
     (var/"run").mkpath
+  end
+
+  service do
+    run [opt_bin/"shairport-sync", "--use-stderr", "--verbose"]
+    keep_alive true
+    log_path var/"log/shairport-sync.log"
+    error_log_path var/"log/shairport-sync.log"
   end
 
   test do

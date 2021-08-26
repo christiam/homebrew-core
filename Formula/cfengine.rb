@@ -1,34 +1,52 @@
 class Cfengine < Formula
   desc "Help manage and understand IT infrastructure"
   homepage "https://cfengine.com/"
-  url "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-3.14.0.tar.gz"
-  sha256 "738d9ade96817c26123046281b6dc8d3c325a2f0f3662e9b23a8e572a4cf4267"
+  url "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-3.18.0.tar.gz"
+  sha256 "d601a3af30f3fba7d51a37476c9e1a00b750682149bf96f4a0002e804bc87783"
+  license all_of: ["BSD-3-Clause", "GPL-2.0-or-later", "GPL-3.0-only", "LGPL-2.0-or-later"]
+
+  livecheck do
+    url "https://cfengine-package-repos.s3.amazonaws.com/release-data/community/releases.json"
+    regex(/["']version["']:\s*["'](\d+(?:\.\d+)+)["']/i)
+  end
 
   bottle do
-    rebuild 1
-    sha256 "b931d7b1f10909c4d2cdb362497203213d84d26df5e5071707f341f85b4df27d" => :catalina
-    sha256 "4eaaf194545c426f58117c2518f7a5db49b8265cd4000abec839bd70f4a9062c" => :mojave
-    sha256 "a221af5677518fd309917b61878dc8ba571a3f364e872c7e0c672449d5429ba1" => :high_sierra
-    sha256 "9a1aa88f5a4b42ad4a5d2df2439cd3a49aa272c26746f4ae25a810291aecbdcc" => :sierra
+    sha256 arm64_big_sur: "3e755d3d93d4f9af8e38a035ae5dc43ee42fd6b5ff11e4dd8d9a42addc193de0"
+    sha256 big_sur:       "369f0b971ef4b7968d2e1a8934ce03e4d841b88c9c0a789ca52e8e5d3b619acd"
+    sha256 catalina:      "397a614052632c146a1a8668a5e0a1e8ab1569296d6bd94b411b5bf15a61c736"
+    sha256 mojave:        "bc4f67e00fa8dc773ab0fcc1b9bb1376513f507fa958bceae50ef943ef5ff670"
+    sha256 x86_64_linux:  "c0182838df4ece465cc5e1084657b650bc1190c1272a0cd50a6af1f7562dae32"
   end
 
   depends_on "lmdb"
   depends_on "openssl@1.1"
   depends_on "pcre"
 
+  on_linux do
+    depends_on "linux-pam"
+  end
+
   resource "masterfiles" do
-    url "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.14.0.tar.gz"
-    sha256 "1afea1fbeb8aae24541d62b0f8ed7633540b2a5eec99561fa1318dc171ff1c7c"
+    url "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.18.0.tar.gz"
+    sha256 "968faee4920936739f914b5fcae441cd03354e909bb26c5dcdeb6750f1fde156"
   end
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
-                          "--with-workdir=#{var}/cfengine",
-                          "--with-lmdb=#{Formula["lmdb"].opt_prefix}",
-                          "--with-pcre=#{Formula["pcre"].opt_prefix}",
-                          "--without-mysql",
-                          "--without-postgresql"
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-workdir=#{var}/cfengine
+      --with-lmdb=#{Formula["lmdb"].opt_prefix}
+      --with-pcre=#{Formula["pcre"].opt_prefix}
+      --without-mysql
+      --without-postgresql
+    ]
+
+    on_linux do
+      args << "--with-systemd-service=no"
+    end
+
+    system "./configure", *args
     system "make", "install"
     (pkgshare/"CoreBase").install resource("masterfiles")
   end

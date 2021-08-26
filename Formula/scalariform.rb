@@ -3,13 +3,23 @@ class Scalariform < Formula
   homepage "https://github.com/scala-ide/scalariform"
   url "https://github.com/scala-ide/scalariform/releases/download/0.2.10/scalariform.jar"
   sha256 "59d7c26f26c13bdbc27e3011da244f01001d55741058062f49e4626862b7991e"
+  license "MIT"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "3acab532156fd394ec7f9e116058be407834d673f63bc9ae243e7dc8c7f318a5"
+  end
 
   head do
     url "https://github.com/scala-ide/scalariform.git"
     depends_on "sbt" => :build
   end
 
-  bottle :unneeded
+  depends_on "openjdk"
 
   def install
     if build.head?

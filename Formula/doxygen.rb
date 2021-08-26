@@ -1,27 +1,36 @@
 class Doxygen < Formula
   desc "Generate documentation for several programming languages"
-  homepage "http://www.doxygen.org/"
-  url "http://doxygen.nl/files/doxygen-1.8.17.src.tar.gz"
-  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.8.17/doxygen-1.8.17.src.tar.gz"
-  sha256 "2cba988af2d495541cbbe5541b3bee0ee11144dcb23a81eada19f5501fd8b599"
+  homepage "https://www.doxygen.org/"
+  url "https://doxygen.nl/files/doxygen-1.9.2.src.tar.gz"
+  mirror "https://downloads.sourceforge.net/project/doxygen/rel-1.9.2/doxygen-1.9.2.src.tar.gz"
+  sha256 "060f254bcef48673cc7ccf542736b7455b67c110b30fdaa33512a5b09bbecee5"
+  license "GPL-2.0-only"
   head "https://github.com/doxygen/doxygen.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "93006f901963b40b8f5a2732c6955e8c21a4ef1146d6ee65848037ecf2d39178" => :mojave
-    sha256 "512227291d4a0edcd18f183762fcc100b6d4c3960e55abe2ece5ab011f463316" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "1a7ba50b992a11544f4a94ab93374eddeaef6aea5cfb2dfefb0c27a2976ef644"
+    sha256 cellar: :any_skip_relocation, big_sur:       "a3c10247d05fe6a007ad97b1131e522eec0729288bee680dfd3e5a4cca2ee5fb"
+    sha256 cellar: :any_skip_relocation, catalina:      "d4651ac184617629b57a0842ecb267adb25c34fc0b61b08296d80ee68928b66d"
+    sha256 cellar: :any_skip_relocation, mojave:        "cab7c99f874c1a498ce9b27ebd863a46dd9940b75a86da8782eef952d49e709a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "12a835bf9986bbbebd0f4441a9e64ffd15413fbcfb8cb199640f29721665d022"
   end
 
   depends_on "bison" => :build
   depends_on "cmake" => :build
 
-  def install
-    args = std_cmake_args + %W[
-      -DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=#{MacOS.version}
-    ]
+  uses_from_macos "flex" => :build
 
+  on_linux do
+    depends_on "gcc"
+  end
+
+  # Need gcc>=7.2. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66297
+  fails_with gcc: "5"
+  fails_with gcc: "6"
+
+  def install
     mkdir "build" do
-      system "cmake", "..", *args
+      system "cmake", "..", *std_cmake_args
       system "make"
     end
     bin.install Dir["build/bin/*"]

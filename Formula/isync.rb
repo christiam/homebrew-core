@@ -1,29 +1,25 @@
 class Isync < Formula
   desc "Synchronize a maildir with an IMAP server"
   homepage "https://isync.sourceforge.io/"
-  revision 1
+  url "https://downloads.sourceforge.net/project/isync/isync/1.4.3/isync-1.4.3.tar.gz"
+  sha256 "b4c720745bda3447fbd5b9f71783b23f699a55295917ae7586ee5c22e91b9708"
+  license "GPL-2.0"
   head "https://git.code.sf.net/p/isync/isync.git"
 
-  stable do
-    url "https://downloads.sourceforge.net/project/isync/isync/1.3.1/isync-1.3.1.tar.gz"
-    sha256 "68cb4643d58152097f01c9b3abead7d7d4c9563183d72f3c2a31d22bc168f0ea"
-    # Patch to fix detection of OpenSSL 1.1
-    # https://sourceforge.net/p/isync/bugs/51/
-    patch :DATA
-  end
-
   bottle do
-    cellar :any
-    sha256 "d4ea3fd276458ae669596cc955beee0d2cb38ab217fc51c5c6c2acb6c73de260" => :catalina
-    sha256 "7863e1861cc119853fadc35ff6afe7f13bf1e420f22b70e77d0bb32997943329" => :mojave
-    sha256 "2da1bd2fef7c6eb9af331a0536e02df8dd0bc9b0fc42eb534ec8499a87f8c197" => :high_sierra
-    sha256 "a19f503aa9490146a19a4197e8e0190cffad685c7fdba0582544c44ee96f1fe5" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "234460b3dd4674da6104722ae8590a73c67ba595af54e66d2ddaeae54efd4be9"
+    sha256 cellar: :any,                 big_sur:       "908d620917e954c55c095b015f4f13475d1ec69022951fc06154a193c6b368b1"
+    sha256 cellar: :any,                 catalina:      "c8c78c50bf5d9070cbd3faaf43555e68bf0c673cb17bd25034ea4e93400f882e"
+    sha256 cellar: :any,                 mojave:        "8e24cd012a3640bf0aaccf003a1682285def1e05580fe70292d2765befb52e5a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "f0acc76de8df5cea3da8ac0e6a005b616946ab1ac19d91e09670e19b9fdf7ebe"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "berkeley-db"
   depends_on "openssl@1.1"
+
+  uses_from_macos "zlib"
 
   def install
     # Regenerated for HEAD, and because of our patch
@@ -43,54 +39,42 @@ class Isync < Formula
     system "make", "install"
   end
 
-  plist_options :manual => "isync"
+  plist_options manual: "isync"
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>EnvironmentVariables</key>
+  def plist
+    <<~EOS
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
         <dict>
-          <key>PATH</key>
-          <string>/usr/bin:/bin:/usr/sbin:/sbin:#{HOMEBREW_PREFIX}/bin</string>
+          <key>EnvironmentVariables</key>
+          <dict>
+            <key>PATH</key>
+            <string>/usr/bin:/bin:/usr/sbin:/sbin:#{HOMEBREW_PREFIX}/bin</string>
+          </dict>
+          <key>KeepAlive</key>
+          <false/>
+          <key>Label</key>
+          <string>#{plist_name}</string>
+          <key>ProgramArguments</key>
+          <array>
+            <string>#{opt_bin}/mbsync</string>
+            <string>-a</string>
+          </array>
+          <key>StartInterval</key>
+          <integer>300</integer>
+          <key>RunAtLoad</key>
+          <true />
+          <key>StandardErrorPath</key>
+          <string>/dev/null</string>
+          <key>StandardOutPath</key>
+          <string>/dev/null</string>
         </dict>
-        <key>KeepAlive</key>
-        <false/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/mbsync</string>
-          <string>-a</string>
-        </array>
-        <key>StartInterval</key>
-        <integer>300</integer>
-        <key>RunAtLoad</key>
-        <true />
-        <key>StandardErrorPath</key>
-        <string>/dev/null</string>
-        <key>StandardOutPath</key>
-        <string>/dev/null</string>
-      </dict>
-    </plist>
-  EOS
+      </plist>
+    EOS
   end
 
   test do
     system bin/"mbsync-get-cert", "duckduckgo.com:443"
   end
 end
-__END__
-diff -pur isync-1.3.1/configure.ac isync-1.3.1-fixed/configure.ac
---- isync-1.3.1/configure.ac	2019-05-28 15:44:13.000000000 +0200
-+++ isync-1.3.1-fixed/configure.ac	2019-09-07 15:39:55.000000000 +0200
-@@ -94,7 +94,7 @@ if test "x$ob_cv_with_ssl" != xno; then
-     sav_LDFLAGS=$LDFLAGS
-     LDFLAGS="$LDFLAGS $SSL_LDFLAGS"
-     AC_CHECK_LIB(dl, dlopen, [LIBDL=-ldl])
--    AC_CHECK_LIB(crypto, CRYPTO_lock, [LIBCRYPTO=-lcrypto])
-+    AC_CHECK_LIB(crypto, HMAC_Update, [LIBCRYPTO=-lcrypto])
-     AC_CHECK_LIB(ssl, SSL_connect,
-                  [SSL_LIBS="-lssl $LIBCRYPTO $LIBDL" have_ssl_paths=yes])
-     LDFLAGS=$sav_LDFLAGS

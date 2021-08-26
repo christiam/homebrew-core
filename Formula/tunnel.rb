@@ -1,14 +1,17 @@
 class Tunnel < Formula
   desc "Expose local servers to the internet securely"
   homepage "https://tunnel.labstack.com/docs"
-  url "https://github.com/labstack/tunnel-client/archive/v0.5.14.tar.gz"
-  sha256 "83f7d63520171f052ff50d2e3f56675545350b0aa812b3634397c8d6916292fb"
+  url "https://github.com/labstack/tunnel-client/archive/v0.5.15.tar.gz"
+  sha256 "7a57451416b76dbf220e69c7dd3e4c33dc84758a41cdb9337a464338565e3e6e"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "2ebbd50a674366bb3dc57632b5aa9a95886cf13ef69a1ecdcb2f9074bb4c6ada" => :catalina
-    sha256 "02b1728c7b8f973e0bec3dea0944f591e00c511179cc1c50f2483833c83d94cd" => :mojave
-    sha256 "94fe0f4a2841c10c8f1031cd9083d0c683b52ed8f94c8d657eefc2de76e7c5c2" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "767bd856724fe5f8558016eb163d032891215a99e9b1c78716b81f1b3d99d37b"
+    sha256 cellar: :any_skip_relocation, big_sur:       "0994c3baa09de48feb88d933a70b97f91f68d52a85bf3e14343d19fed091e578"
+    sha256 cellar: :any_skip_relocation, catalina:      "b13e5a208e756bc66a56f9e85ed2d5f1456b5a58055213b1c1579223da0c4ba3"
+    sha256 cellar: :any_skip_relocation, mojave:        "d4d2c6b802eb2f4fb03628481ec7251b52fb05e536ef161ae9e6eb96d4afb8b1"
+    sha256 cellar: :any_skip_relocation, high_sierra:   "8425650fbc2fad854ab561a0590e4a899e235882a72f40d95fae4bcb1115c094"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "d3964669aa7c99a6eb5ea3b5d0fe3b9ea13083e04db6e2aa82e8996c2750a0e8"
   end
 
   depends_on "go" => :build
@@ -19,6 +22,6 @@ class Tunnel < Formula
   end
 
   test do
-    system bin/"tunnel", "ping"
+    assert_match "you need an api key", shell_output(bin/"tunnel 8080", 1)
   end
 end

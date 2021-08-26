@@ -1,16 +1,22 @@
 class Lnav < Formula
   desc "Curses-based tool for viewing and analyzing log files"
   homepage "https://lnav.org/"
-  url "https://github.com/tstack/lnav/releases/download/v0.8.5/lnav-0.8.5.tar.gz"
-  sha256 "bb809bc8198d8f7395f3de76efdc1a08a5c2c97dc693040faee38802c38945de"
+  url "https://github.com/tstack/lnav/releases/download/v0.10.0/lnav-0.10.0.tar.gz"
+  sha256 "05caf14d410a3912ef9093773aec321e0f4718a29476005c05dd53fcd6de1531"
+  license "BSD-2-Clause"
   revision 1
 
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
   bottle do
-    cellar :any_skip_relocation
-    sha256 "ada56b43c4f4301dd5c6a48502a4f801c1871b95c84aad6aeebfb0370ef4bc97" => :catalina
-    sha256 "2c6e7bd10eb78c6f476739be3e106012d6decce1d8ff1ae1a51c55f3cea2c688" => :mojave
-    sha256 "bc796136677ca2b4bee92decf2d517ee0a92a6ea2d476b45a350d5aff367c948" => :high_sierra
-    sha256 "91968b3b06733d667459ca2ffb81e82b91d10e4710c22f72a739e2eed203ba1e" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "689f5a6514b114b7bc08e41b92dd146cf37db4d8e129bd08ad3002c93d739402"
+    sha256 cellar: :any,                 big_sur:       "a3b4186894e82c09c06c49f1e86f43fa829c6aebda2abd125a2c90e4202b02b6"
+    sha256 cellar: :any,                 catalina:      "87b9c1b85678d964076f0d2a622330a121b15058751de52d4d3802118983165f"
+    sha256 cellar: :any,                 mojave:        "f40a8164360104c3078d17b78ab5ad109437fbb84e7db487a68ad4ed3ac8391f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "3f5d6c89163a52768fd9ac42d9c3a45737cc87b7a0beb80cc1e4193ad95c0158"
   end
 
   head do
@@ -21,17 +27,26 @@ class Lnav < Formula
     depends_on "re2c" => :build
   end
 
+  depends_on "libarchive"
   depends_on "pcre"
   depends_on "readline"
   depends_on "sqlite"
 
+  on_linux do
+    depends_on "gcc" => :build
+  end
+
+  fails_with gcc: "5"
+
   def install
     system "./autogen.sh" if build.head?
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
-                          "--with-sqlite=#{Formula["sqlite"].opt_prefix}",
-                          "--with-readline=#{Formula["readline"].opt_prefix}"
-    system "make", "install"
+    ENV.append "LDFLAGS", "-L#{Formula["libarchive"].opt_lib}"
+    system "./configure", *std_configure_args,
+                          "--with-sqlite3=#{Formula["sqlite"].opt_prefix}",
+                          "--with-readline=#{Formula["readline"].opt_prefix}",
+                          "--with-libarchive=#{Formula["libarchive"].opt_prefix}",
+                          "LDFLAGS=#{ENV.ldflags}"
+    system "make", "install", "V=1"
   end
 
   test do

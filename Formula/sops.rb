@@ -1,16 +1,17 @@
 class Sops < Formula
   desc "Editor of encrypted files"
   homepage "https://github.com/mozilla/sops"
-  url "https://github.com/mozilla/sops/archive/v3.5.0.tar.gz"
-  sha256 "a9c257dc5ddaab736dce08b8c5b1f00e6ca1e3171909b6d7385689044ebe759b"
-  revision 1
-  head "https://github.com/mozilla/sops.git"
+  url "https://github.com/mozilla/sops/archive/v3.7.1.tar.gz"
+  sha256 "536ee140d888b53b71c1e8edd669f4c11bc573428983fbea644fbbfcd7d7079a"
+  license "MPL-2.0"
+  head "https://github.com/mozilla/sops.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "55e5624ed3a1c5ccd2113d663483e8c6fabbb45dede9b691f8921d698549e39e" => :catalina
-    sha256 "7df3685379929174b605e1767b13a19af0db45c4d7f27bbf6d3b6ac905235258" => :mojave
-    sha256 "67541150ddec0ae37ad7b7f4df4ecca8eb8814bf49708abe8cf1e94099f398bb" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "6ed7327988bf2db73d4883d5c4e280cd5e576980b15cd584841175714e9a6a17"
+    sha256 cellar: :any_skip_relocation, big_sur:       "786527c0a00ac74579e50623298aef7f5a996d63211c08d14b87999255f41809"
+    sha256 cellar: :any_skip_relocation, catalina:      "f95b128d36ffb171695376d011dbf1fc971117152367c109f6232949b45e710a"
+    sha256 cellar: :any_skip_relocation, mojave:        "edc533e3636e05deb0a854a1c3950dfdbeb01ac38f7ef6d8857426d55991a542"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "7f81bba58cecb22d7d6f08383e77c7c137bfb93b76860fdf5e5da788ed6b7be2"
   end
 
   depends_on "go" => :build
@@ -23,6 +24,7 @@ class Sops < Formula
   test do
     assert_match version.to_s, shell_output("#{bin}/sops --version")
 
-    assert_match "Recovery failed because no master key was able to decrypt the file.", shell_output("#{bin}/sops #{pkgshare}/example.yaml 2>&1", 128)
+    assert_match "Recovery failed because no master key was able to decrypt the file.",
+      shell_output("#{bin}/sops #{pkgshare}/example.yaml 2>&1", 128)
   end
 end

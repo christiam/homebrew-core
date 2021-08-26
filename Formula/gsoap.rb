@@ -1,25 +1,31 @@
 class Gsoap < Formula
   desc "SOAP stub and skeleton compiler for C and C++"
   homepage "https://www.genivia.com/products.html"
-  url "https://downloads.sourceforge.net/project/gsoap2/gsoap-2.8/gsoap_2.8.89.zip"
-  sha256 "d9b10ca2611b00932fab98cbf67b514ddad24f22cbbda91d9d68ea45821c54f2"
-  revision 1
+  url "https://downloads.sourceforge.net/project/gsoap2/gsoap_2.8.117.zip"
+  sha256 "7cadf8808cfd982629948fe09e4fa6cd18e23cafd40df0aaaff1b1f5b695c442"
+  license any_of: ["GPL-2.0-or-later", "gSOAP-1.3b"]
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/gsoap[._-]v?(\d+(?:\.\d+)+)\.zip}i)
+  end
 
   bottle do
-    sha256 "3a1e9b3f413512feaea7436654afef10fe166e57a4c6f9f181250792118d09ec" => :catalina
-    sha256 "57b1ed5d8d8b6f38db767f957b75dd05bacb1c168da6f75f2202e9995580bede" => :mojave
-    sha256 "4dc18439df3f8f79ecac7eb2438d8937f9f6c5919bdd383b945660c8a398c2c7" => :high_sierra
-    sha256 "95d559743a7f807d298908e69517d9c2e11d1c3aa12282712b4b73ac41e12fb7" => :sierra
+    sha256 arm64_big_sur: "fb074963567f15e35317ba190540835a9701746ba9a590002415ae6dc4083d96"
+    sha256 big_sur:       "84f24f86809047fdd972a9d192514b0d9ab08a27821ce07a3e60f33a44697459"
+    sha256 catalina:      "6bee22cc8b7c43f3d41b51bd75c50cf0f444feed51d9bf5a4f7dd288d662a42d"
+    sha256 mojave:        "d90706cf140e9b273d56007f6e56db0933686d50afae9a9703b862af3bce5b55"
+    sha256 x86_64_linux:  "2ecb0911a0996e51f00d7e35a3729865bc19eeec3aaf5189ce54ee7e18c5d5a5"
   end
 
   depends_on "autoconf" => :build
   depends_on "openssl@1.1"
 
+  uses_from_macos "bison"
+  uses_from_macos "flex"
+  uses_from_macos "zlib"
+
   def install
-    # Contacted upstream by email and been told this should be fixed by 2.8.37,
-    # it is due to the compilation of symbol2.c and soapcpp2_yacc.h not being
-    # ordered correctly in parallel. However, issue persists as of 2.8.89.
-    ENV.deparallelize
     system "./configure", "--prefix=#{prefix}"
     system "make"
     system "make", "install"

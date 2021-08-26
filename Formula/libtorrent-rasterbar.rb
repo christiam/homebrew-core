@@ -1,59 +1,72 @@
 class LibtorrentRasterbar < Formula
   desc "C++ bittorrent library with Python bindings"
   homepage "https://www.libtorrent.org/"
-  url "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_2_3/libtorrent-rasterbar-1.2.3.tar.gz"
-  sha256 "1582fdbbd0449bcfe4ffae2ccb9e5bf0577459a32bb25604e01accb847da1a2d"
+  url "https://github.com/arvidn/libtorrent/releases/download/v2.0.4/libtorrent-rasterbar-2.0.4.tar.gz"
+  sha256 "55bcce16c4b85b8cccd20e7ff4a9fde92db66333a25d6504a83c0bb0a5f7f529"
+  license "BSD-3-Clause"
+  head "https://github.com/arvidn/libtorrent.git", branch: "RC_2_0"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:[._]\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "66937184ea06abd847e368a49fb81a083c4559ca332ad67e05d5a8e94d05740e" => :catalina
-    sha256 "f70fda7a90824aa39b22dd1559d902d0e27d03c0d231f4381f79f1cf0fab6b84" => :mojave
-    sha256 "78c7076eaa802ca7a3b40a2132592d0c39558d8278ab082cd333d405701a81a5" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "c2c117a2c0c9c2c8df372a7b8d91605096d1dde615c8fb90c4572ff8ffee4a3d"
+    sha256 cellar: :any,                 big_sur:       "d48ce0307a32554477f8e726ac48f53452172dd53af279d418d35b47d981c903"
+    sha256 cellar: :any,                 catalina:      "427766e035c86318f55b44fe60b740355ddd2f804c3ceef6a15a838857d6efbd"
+    sha256 cellar: :any,                 mojave:        "a4d966bc79d6771bdebcdfd55e1f9d8455e9caa0e0d4ed72b1bf562c8197aa21"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "37574565f695cfe16d3c9cbc1572de7f778fbed517e5c91a13fe0aa403fc421c"
   end
 
-  head do
-    url "https://github.com/arvidn/libtorrent.git"
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-  end
-
-  depends_on "pkg-config" => :build
+  depends_on "cmake" => :build
   depends_on "boost"
   depends_on "boost-python3"
   depends_on "openssl@1.1"
-  depends_on "python"
+  depends_on "python@3.9"
+
+  conflicts_with "libtorrent-rakshasa", because: "they both use the same libname"
 
   def install
-    args = %W[
-      --disable-debug
-      --disable-dependency-tracking
-      --disable-silent-rules
-      --prefix=#{prefix}
-      --enable-encryption
-      --enable-python-binding
-      --with-boost=#{Formula["boost"].opt_prefix}
-      --with-boost-python=boost_python37-mt
-      PYTHON=python3
+    args = %w[
+      -DCMAKE_CXX_STANDARD=14
+      -Dencryption=ON
+      -Dpython-bindings=ON
+      -Dpython-egg-info=ON
     ]
+    args += std_cmake_args
 
-    if build.head?
-      system "./bootstrap.sh", *args
-    else
-      system "./configure", *args
+    mkdir "build" do
+      system "cmake", "..", *args
+      system "make"
+      system "make", "install"
     end
 
-    system "make", "install"
     libexec.install "examples"
   end
 
   test do
-    system ENV.cxx, "-std=c++11", "-I#{Formula["boost"].include}/boost",
-                    "-L#{lib}", "-ltorrent-rasterbar",
-                    "-L#{Formula["boost"].lib}", "-lboost_system",
-                    "-framework", "SystemConfiguration",
-                    "-framework", "CoreFoundation",
-                    libexec/"examples/make_torrent.cpp", "-o", "test"
+    args = [
+      "-I#{Formula["boost"].include}/boost",
+      "-L#{Formula["boost"].lib}",
+      "-I#{include}",
+      "-L#{lib}",
+      "-lpthread",
+      "-lboost_system",
+      "-ltorrent-rasterbar",
+    ]
+
+    on_macos do
+      args += [
+        "-framework",
+        "SystemConfiguration",
+        "-framework",
+        "CoreFoundation",
+      ]
+    end
+
+    system ENV.cxx, libexec/"examples/make_torrent.cpp",
+                    "-std=c++14", *args, "-o", "test"
     system "./test", test_fixtures("test.mp3"), "-o", "test.torrent"
     assert_predicate testpath/"test.torrent", :exist?
   end

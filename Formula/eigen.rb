@@ -1,19 +1,23 @@
 class Eigen < Formula
   desc "C++ template library for linear algebra"
   homepage "https://eigen.tuxfamily.org/"
-  url "https://bitbucket.org/eigen/eigen/get/3.3.7.tar.bz2"
-  sha256 "9f13cf90dedbe3e52a19f43000d71fdf72e986beb9a5436dddcd61ff9d77a3ce"
-  head "https://bitbucket.org/eigen/eigen", :using => :hg
+  url "https://gitlab.com/libeigen/eigen/-/archive/3.4/eigen-3.4.0.tar.gz"
+  sha256 "575d079f9fb56806f605b90fd85fbaeb4a3fb31b573fbbe1ab2fed3b5f88d8fe"
+  license "MPL-2.0"
+  head "https://gitlab.com/libeigen/eigen.git"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a756d567dc590cdad796aa2d442d08bbdb973fdb70cd657b530224e4d24c6b68" => :catalina
-    sha256 "683c2dd898245f61c298d1f2675885e7c67ec7e18f6665df1ec56f088bd670f4" => :mojave
-    sha256 "79c52d57394cf485eb324effab69279e4f3beb63cbacfa600ae0a678d852a827" => :high_sierra
-    sha256 "79c52d57394cf485eb324effab69279e4f3beb63cbacfa600ae0a678d852a827" => :sierra
+    sha256 cellar: :any_skip_relocation, all: "87b2664bdc6ec98850643d1149ab53c57b9f6c228cabe23f724b0ff331492fca"
   end
 
   depends_on "cmake" => :build
+
+  conflicts_with "freeling", because: "freeling ships its own copy of eigen"
 
   def install
     mkdir "eigen-build" do

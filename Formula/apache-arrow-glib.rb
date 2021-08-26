@@ -1,27 +1,36 @@
 class ApacheArrowGlib < Formula
   desc "GLib bindings for Apache Arrow"
   homepage "https://arrow.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=arrow/arrow-0.15.1/apache-arrow-0.15.1.tar.gz"
-  sha256 "9a2c58c72310eafebb4997244cbeeb8c26696320d0ae3eb3e8512f75ef856fc9"
-  revision 1
-  head "https://github.com/apache/arrow.git"
+  url "https://www.apache.org/dyn/closer.lua?path=arrow/arrow-5.0.0/apache-arrow-5.0.0.tar.gz"
+  mirror "https://archive.apache.org/dist/arrow/arrow-5.0.0/apache-arrow-5.0.0.tar.gz"
+  sha256 "c3b4313eca594c20f761a836719721aaf0760001af896baec3ab64420ff9910a"
+  license "Apache-2.0"
+  head "https://github.com/apache/arrow.git", branch: "master"
+
+  livecheck do
+    formula "apache-arrow"
+  end
 
   bottle do
-    sha256 "40f8f387d085231e4196326e5077a0a2a57d26fba3cf1aad354e8b8ba12543da" => :catalina
-    sha256 "fd32a9689862003253b5508c00455cedf8ddb353a43307d258d124b12342312e" => :mojave
-    sha256 "6166b657fec8b598460df8b12428d60ac2c5c67cb08521cfd33e4d73578b5920" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "37c2b194b6c0648b40a2627dabdf9073ef280bcb85c3633a1b528636b00ef9e7"
+    sha256 cellar: :any, big_sur:       "feb4e5e5d8257e0ab042fe905f999ff425cf219641d64bb98e5b6f4226104436"
+    sha256 cellar: :any, catalina:      "5017136d50cb3b2159370f6c2f2d2824607504e6e7f317b5a7c55a7f02437884"
+    sha256 cellar: :any, mojave:        "40980b2ef3e926109475f08522df24aa409f7d40252738ee7f5d2fd32a8b0bd9"
+    sha256               x86_64_linux:  "00de00e057ffeafdc424efb6fb102fd233e349e589d1954fd347ae7e0f05157d"
   end
 
   depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "apache-arrow"
   depends_on "glib"
 
   def install
-    cd "c_glib" do
-      system "./configure", "--prefix=#{prefix}"
-      system "make"
-      system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, "../c_glib"
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
   end
 

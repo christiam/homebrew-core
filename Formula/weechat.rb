@@ -1,14 +1,17 @@
 class Weechat < Formula
   desc "Extensible IRC client"
   homepage "https://www.weechat.org"
-  url "https://weechat.org/files/src/weechat-2.7.tar.xz"
-  sha256 "56fc42a4afece57bc27f95a2d155815a5e6472f32535add4c0ab4ce3b5e399e7"
-  head "https://github.com/weechat/weechat.git"
+  url "https://weechat.org/files/src/weechat-3.2.tar.xz"
+  sha256 "39a8adf374e80653c9dd2be06870341594ea081b3a9c3690132e556abf9d87a8"
+  license "GPL-3.0-or-later"
+  head "https://github.com/weechat/weechat.git", branch: "master"
 
   bottle do
-    sha256 "6b1633f4e5f572c6358094ce4d14f40accb43cf4b827bff90cd919724eb1435c" => :catalina
-    sha256 "d7ff08c8ed104c89b7463d1cbf6740fd15def9991355855bbe20fd51838b9332" => :mojave
-    sha256 "69b7afc70b76386a35e6a63978a8c44f515fdabd19b1b1a3027162ede7a24a99" => :high_sierra
+    sha256 arm64_big_sur: "fbd66c10bc0224c5d21fbfb08c96f96d9ae2c014945fea2e1298ec0fff0b4030"
+    sha256 big_sur:       "0261a4b52e5fd25067fc2d9af3af59090cadd466c36cd69fcf7a635fffcf0bd6"
+    sha256 catalina:      "4d939d2a34065cdae47590d50b6b2aa3c7595b79af0957cb7535c7ba25ee0255"
+    sha256 mojave:        "d9af6b42a994c3a8ee5632563dd5cc285395d0dcaa908f7b928ce5c1e3e845d7"
+    sha256 x86_64_linux:  "b082fbbb1b2a26d7258f538f46448a5d0d6511d38f2ff9feb9b6b667856543ff"
   end
 
   depends_on "asciidoctor" => :build
@@ -18,25 +21,34 @@ class Weechat < Formula
   depends_on "gettext"
   depends_on "gnutls"
   depends_on "libgcrypt"
-  depends_on "libiconv"
   depends_on "lua"
   depends_on "ncurses"
   depends_on "perl"
-  depends_on "python"
+  depends_on "python@3.9"
   depends_on "ruby"
+
+  uses_from_macos "curl"
+  uses_from_macos "tcl-tk"
+
+  on_macos do
+    depends_on "libiconv"
+  end
 
   def install
     args = std_cmake_args + %W[
       -DENABLE_MAN=ON
       -DENABLE_GUILE=OFF
-      -DCA_FILE=#{etc}/openssl/cert.pem
+      -DCA_FILE=#{Formula["gnutls"].pkgetc}/cert.pem
       -DENABLE_JAVASCRIPT=OFF
       -DENABLE_PHP=OFF
     ]
 
-    if MacOS.version >= :mojave && MacOS::CLT.installed?
-      ENV["SDKROOT"] = ENV["HOMEBREW_SDKROOT"] = MacOS::CLT.sdk_path(MacOS.version)
-    end
+    # Fix error: '__declspec' attributes are not enabled
+    # See https://github.com/weechat/weechat/issues/1605
+    args << "-DCMAKE_C_FLAGS=-fdeclspec" if ENV.compiler == :clang
+
+    # Fix system gem on Mojave
+    ENV["SDKROOT"] = ENV["HOMEBREW_SDKROOT"]
 
     mkdir "build" do
       system "cmake", "..", *args

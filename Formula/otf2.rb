@@ -1,34 +1,42 @@
 class Otf2 < Formula
   desc "Open Trace Format 2 file handling library"
   homepage "https://www.vi-hps.org/projects/score-p/"
-  url "https://www.vi-hps.org/cms/upload/packages/otf2/otf2-2.1.1.tar.gz"
-  sha256 "01591b42e76f396869ffc84672f4eaa90ee8ec2a8939755d9c0b5b8ecdcf47d3"
+  url "https://perftools.pages.jsc.fz-juelich.de/cicd/otf2/tags/otf2-2.3/otf2-2.3.tar.gz"
+  sha256 "36957428d37c40d35b6b45208f050fb5cfe23c54e874189778a24b0e9219c7e3"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?otf2[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "24d03eef4fee4e1cf533f4f015a51d04ceb0d086f96f5f7d070b329b44938819" => :catalina
-    sha256 "cd45334e8b465b0405d641311b000de22e99eb93abe863da642307144ad8122c" => :mojave
-    sha256 "66e9193d40e126c83d98bca06d30bd18815fb4aebbd486ff8d59ad27724935aa" => :high_sierra
-    sha256 "70db1872735f904393ff8b3d1395c40eed3201072c5f08ca1ca5235d40688d07" => :sierra
+    sha256 arm64_big_sur: "8662b77af43c3692b6e46cc238971ec5fc7285611318dd22b6cf7494eeaab245"
+    sha256 big_sur:       "95502a9bcfe892e2d14c0915f81f1b1b80351496f31d049741b793b3de1343ef"
+    sha256 catalina:      "5d0dee1bdd5512982dc5aab82faf3f3d620e2d223c8e0924d6cebb345e054554"
+    sha256 mojave:        "6b6c453bf295b0c846a30341ab449e4584a5530c36a11092cf280d0722e86305"
+    sha256 x86_64_linux:  "1d50206940aff9bd6e75c8ee1ad88b274aa129bc8c3d7348f7e0d0064fd1673c"
   end
 
   depends_on "sphinx-doc" => :build
-  depends_on "gcc"
+  depends_on "gcc" # for gfortran
   depends_on "open-mpi"
-  depends_on "python"
+  depends_on "python@3.9"
 
   resource "future" do
-    url "https://files.pythonhosted.org/packages/90/52/e20466b85000a181e1e144fd8305caf2cf475e2f9674e797b222f8105f5f/future-0.17.1.tar.gz"
-    sha256 "67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
+    url "https://files.pythonhosted.org/packages/45/0b/38b06fd9b92dc2b68d58b75f900e97884c45bedd2ff83203d933cf5851c9/future-0.18.2.tar.gz"
+    sha256 "b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"
   end
 
   def install
-    xy = Language::Python.major_minor_version "python3"
+    python3 = Formula["python@3.9"].opt_bin/"python3"
+    xy = Language::Python.major_minor_version python3
     ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python#{xy}/site-packages"
 
     resource("future").stage do
-      system "python3", *Language::Python.setup_install_args(libexec/"vendor")
+      system python3, *Language::Python.setup_install_args(libexec/"vendor")
     end
-    ENV["PYTHON"] = Formula["python"].opt_bin/"python3"
+    ENV["PYTHON"] = python3
     ENV["SPHINX"] = Formula["sphinx-doc"].opt_bin/"sphinx-build"
 
     system "./configure", "--disable-debug",

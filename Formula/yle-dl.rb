@@ -1,19 +1,30 @@
 class YleDl < Formula
   desc "Download Yle videos from the command-line"
   homepage "https://aajanki.github.io/yle-dl/index-en.html"
-  url "https://github.com/aajanki/yle-dl/archive/20191231.tar.gz"
-  sha256 "3f791d846bedfade18fdc47906c699c4e97e835537c4f0616b5a46bf166b510f"
-  head "https://github.com/aajanki/yle-dl.git"
+  url "https://files.pythonhosted.org/packages/fa/bb/3e89fa9214d97d2d590fbde45c1ad9e9975aa5dc69a86f7d2d8d3fa20c85/yle-dl-20210808.tar.gz"
+  sha256 "b6dbd89162bec4dc2e6c5eaa50c98eb32a09724417140d74f6630a214c52336a"
+  license "GPL-3.0-or-later"
+  head "https://github.com/aajanki/yle-dl.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "1a50e53e7fc1b294cffc5db5b1a8df020dd70c263c72fdc7d85c172919fdda84" => :catalina
-    sha256 "5c78443260df480f1f65b12f2b4c2bbb0b39d0661ba2146a6ec3ea8d3eef99b3" => :mojave
-    sha256 "e125ef186064c1ac824ae06603986bd9638f9d0b2e5b3229d033b5ad3c606816" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "1abfd53bec86856e959f687bb71b23ae01459e8cf6b5a8aaeb2d25f8b6ea691f"
+    sha256 cellar: :any_skip_relocation, big_sur:       "374da8b0a09e1b48725341aad408fbd483cee68d8b1f747119650c5f4ea7c7c2"
+    sha256 cellar: :any_skip_relocation, catalina:      "131c2664663464e07f059d7dbad05599fc30322a3923916c1bc914fe3a523eba"
+    sha256 cellar: :any_skip_relocation, mojave:        "9d18878bc755d839901e9431e27dc0913ab28881c66b8dc93361106bc3623cc7"
   end
 
-  depends_on "python"
+  depends_on "ffmpeg"
+  depends_on "python@3.9"
   depends_on "rtmpdump"
+
+  uses_from_macos "libxslt"
+
+  # `Cannot import name "Feature" from "setuptools" in version 46.0.0`, and lock setuptools to v45.0.0
+  # https://github.com/pypa/setuptools/issues/2017#issuecomment-605354361
+  resource "setuptools" do
+    url "https://files.pythonhosted.org/packages/fd/76/3c7f726ed5c582019937f178d7478ce62716b7e8263344f1684cbe11ab3e/setuptools-45.0.0.zip"
+    sha256 "c46d9c8f2289535457d36c676b541ca78f7dcb736b97d02f50d17f7f15b583cc"
+  end
 
   resource "AdobeHDS.php" do
     # NOTE: yle-dl always installs the HEAD version of AdobeHDS.php. We use a specific commit.
@@ -23,73 +34,43 @@ class YleDl < Formula
   end
 
   resource "attrs" do
-    url "https://files.pythonhosted.org/packages/98/c3/2c227e66b5e896e15ccdae2e00bbc69aa46e9a8ce8869cc5fa96310bf612/attrs-19.3.0.tar.gz"
-    sha256 "f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"
+    url "https://files.pythonhosted.org/packages/ed/d6/3ebca4ca65157c12bd08a63e20ac0bdc21ac7f3694040711f9fd073c0ffb/attrs-21.2.0.tar.gz"
+    sha256 "ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb"
   end
 
   resource "certifi" do
-    url "https://files.pythonhosted.org/packages/41/bf/9d214a5af07debc6acf7f3f257265618f1db242a3f8e49a9b516f24523a6/certifi-2019.11.28.tar.gz"
-    sha256 "25b64c7da4cd7479594d035c08c2d809eb4aab3a26e5a990ea98cc450c320f1f"
+    url "https://files.pythonhosted.org/packages/6d/78/f8db8d57f520a54f0b8a438319c342c61c22759d8f9a1cd2e2180b5e5ea9/certifi-2021.5.30.tar.gz"
+    sha256 "2bbf76fd432960138b3ef6dda3dde0544f27cbf8546c458e60baf371917ba9ee"
   end
 
-  resource "chardet" do
-    url "https://files.pythonhosted.org/packages/fc/bb/a5768c230f9ddb03acc9ef3f0d4a3cf93462473795d18e9535498c8f929d/chardet-3.0.4.tar.gz"
-    sha256 "84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"
+  resource "charset-normalizer" do
+    url "https://files.pythonhosted.org/packages/e7/4e/2af0238001648ded297fb54ceb425ca26faa15b341b4fac5371d3938666e/charset-normalizer-2.0.4.tar.gz"
+    sha256 "f23667ebe1084be45f6ae0538e4a5a865206544097e4e8bbcacf42cd02a348f3"
   end
 
-  resource "defusedxml" do
-    url "https://files.pythonhosted.org/packages/a4/5f/f8aa58ca0cf01cbcee728abc9d88bfeb74e95e6cb4334cfd5bed5673ea77/defusedxml-0.6.0.tar.gz"
-    sha256 "f684034d135af4c6cbb949b8a4d2ed61634515257a67299e5f940fbaa34377f5"
-  end
-
-  resource "future" do
-    url "https://files.pythonhosted.org/packages/45/0b/38b06fd9b92dc2b68d58b75f900e97884c45bedd2ff83203d933cf5851c9/future-0.18.2.tar.gz"
-    sha256 "b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"
+  resource "ConfigArgParse" do
+    url "https://files.pythonhosted.org/packages/42/1c/3e40ae017361f30b01b391b1ee263ec93e4c2666221c69ebba297ff33be6/ConfigArgParse-1.5.2.tar.gz"
+    sha256 "c39540eb4843883d526beeed912dc80c92481b0c13c9787c91e614a624de3666"
   end
 
   resource "idna" do
-    url "https://files.pythonhosted.org/packages/ad/13/eb56951b6f7950cadb579ca166e448ba77f9d24efc03edd7e55fa57d04b7/idna-2.8.tar.gz"
-    sha256 "c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407"
+    url "https://files.pythonhosted.org/packages/cb/38/4c4d00ddfa48abe616d7e572e02a04273603db446975ab46bbcd36552005/idna-3.2.tar.gz"
+    sha256 "467fbad99067910785144ce333826c71fb0e63a425657295239737f7ecd125f3"
   end
 
   resource "lxml" do
-    url "https://files.pythonhosted.org/packages/e4/19/8dfeef50623892577dc05245093e090bb2bab4c8aed5cad5b03208959563/lxml-4.4.2.tar.gz"
-    sha256 "eff69ddbf3ad86375c344339371168640951c302450c5d3e9936e98d6459db06"
-  end
-
-  resource "Mini-AMF" do
-    url "https://files.pythonhosted.org/packages/c9/a1/153af98d9ca4ae24fb67ab5cb8e4de8ad44fd991739f32d12b9321d6955d/Mini-AMF-0.9.1.tar.gz"
-    sha256 "0c7839dc843b738cdcf5548e85558e7ebd89a9f6fd029751b0bb4d8b0ca4275b"
-  end
-
-  resource "pycryptodomex" do
-    url "https://files.pythonhosted.org/packages/31/19/af19522f294004818c8bf24809d07a76fae7119b2dd8a473e44318912973/pycryptodomex-3.9.4.tar.gz"
-    sha256 "22d970cee5c096b9123415e183ae03702b2cd4d3ba3f0ced25c4e1aba3967167"
-  end
-
-  resource "PySocks" do
-    url "https://files.pythonhosted.org/packages/bd/11/293dd436aea955d45fc4e8a35b6ae7270f5b8e00b53cf6c024c83b657a11/PySocks-1.7.1.tar.gz"
-    sha256 "3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0"
+    url "https://files.pythonhosted.org/packages/e5/21/a2e4517e3d216f0051687eea3d3317557bde68736f038a3b105ac3809247/lxml-4.6.3.tar.gz"
+    sha256 "39b78571b3b30645ac77b95f7c69d1bffc4cf8c3b157c435a34da72e78c82468"
   end
 
   resource "requests" do
-    url "https://files.pythonhosted.org/packages/01/62/ddcf76d1d19885e8579acb1b1df26a852b03472c0e46d2b959a714c90608/requests-2.22.0.tar.gz"
-    sha256 "11e007a8a2aa0323f5a921e9e6a2d7e4e67d9877e85773fba9ba6419025cbeb4"
-  end
-
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/94/3e/edcf6fef41d89187df7e38e868b2dd2182677922b600e880baad7749c865/six-1.13.0.tar.gz"
-    sha256 "30f610279e8b2578cab6db20741130331735c781b56053c59c4076da27f06b66"
+    url "https://files.pythonhosted.org/packages/e7/01/3569e0b535fb2e4a6c384bdbed00c55b9d78b5084e0fb7f4d0bf523d7670/requests-2.26.0.tar.gz"
+    sha256 "b8aa58f8cf793ffd8782d3d8cb19e66ef36f7aba4353eec859e74678b01b07a7"
   end
 
   resource "urllib3" do
-    url "https://files.pythonhosted.org/packages/ad/fc/54d62fa4fc6e675678f9519e677dfc29b8964278d75333cf142892caf015/urllib3-1.25.7.tar.gz"
-    sha256 "f3c5fd51747d450d4dcf6f923c81f78f811aab8205fda64b0aba34a4e48b0745"
-  end
-
-  resource "configargparse" do
-    url "https://files.pythonhosted.org/packages/66/37/dd9fcb3b19c1dceea450ee994952e311a96dd827bb09ee19169c3427e0d3/ConfigArgParse-1.0.tar.gz"
-    sha256 "bf378245bc9cdc403a527e5b7406b991680c2a530e7e81af747880b54eb57133"
+    url "https://files.pythonhosted.org/packages/4f/5a/597ef5911cb8919efe4d86206aa8b2658616d676a7088f0825ca08bd7cb8/urllib3-1.26.6.tar.gz"
+    sha256 "f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"
   end
 
   def install
@@ -110,11 +91,12 @@ class YleDl < Formula
     system "python3", *Language::Python.setup_install_args(libexec)
 
     bin.install Dir["#{libexec}/bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    bin.env_script_all_files(libexec/"bin", PYTHONPATH: ENV["PYTHONPATH"])
   end
 
   test do
-    assert_equal "Traileri: 3 minuuttia-2012-05-30T10:51\n",
-                 shell_output("#{bin}/yle-dl --showtitle https://areena.yle.fi/1-1570236")
+    output = shell_output("#{bin}/yle-dl --showtitle https://areena.yle.fi/1-1570236")
+    assert_match "Traileri:", output
+    assert_match "2012-05-30T10:51", output
   end
 end

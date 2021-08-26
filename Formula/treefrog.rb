@@ -1,23 +1,31 @@
 class Treefrog < Formula
   desc "High-speed C++ MVC Framework for Web Application"
   homepage "https://www.treefrogframework.org/"
-  url "https://github.com/treefrogframework/treefrog-framework/archive/v1.24.0.tar.gz"
-  sha256 "4060736e96bb3c84fe3d0a251cf140baf29724d4cb50212cee4dbf1d491982ed"
-  head "https://github.com/treefrogframework/treefrog-framework.git"
+  url "https://github.com/treefrogframework/treefrog-framework/archive/v2.1.0.tar.gz"
+  sha256 "52ae63955230c73378701fa039da21c2879db5f9d7df20835ecb4c9b09ea95bb"
+  license "BSD-3-Clause"
+  head "https://github.com/treefrogframework/treefrog-framework.git", branch: "master"
 
-  bottle do
-    sha256 "d0c424e40d84fcef8d35bb792f8d3adaf6ebdee2118213c8b13b0e3c57cdea7c" => :catalina
-    sha256 "bbf06535ab64a86ae25ddaf3e2ac066ec48143aa44dc358cd63651c60d9d5cb3" => :mojave
-    sha256 "22653f1d3be2a7dfae678d4d8d9be1b14be167ffc1f3d1cc040e9c3cf1368475" => :high_sierra
-    sha256 "19cc929312e7be589ec943cc4d12a1a34bd4f0b37a008202ff4e551df5c076b1" => :sierra
+  livecheck do
+    url :head
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on :xcode => ["8.0", :build]
-  depends_on :macos => :el_capitan
+  bottle do
+    sha256 arm64_big_sur: "1734d8c8739ea6565b7c55b0febf27d1ab3f2d596b79b24bdbfd242cd3b8a58a"
+    sha256 big_sur:       "fd6ee4faac0658730d5619f0fef1f6951c0ad3e9cbd02533a047f0756f63ae17"
+    sha256 catalina:      "b2ab9fe0c552a34c501c16e28863213ebaaad4dd1042b97252468d5831b2e084"
+    sha256 mojave:        "99089c0b5349dc91cef9d9b4835cc3a648eec2fc423b6b876d31d73473b05903"
+  end
+
+  depends_on xcode: :build
+  depends_on "mongo-c-driver"
   depends_on "qt"
 
   def install
-    system "./configure", "--prefix=#{prefix}"
+    inreplace "src/corelib.pro", "/usr/local", HOMEBREW_PREFIX
+
+    system "./configure", "--prefix=#{prefix}", "--enable-shared-mongoc"
 
     cd "src" do
       system "make"
@@ -31,11 +39,12 @@ class Treefrog < Formula
   end
 
   test do
+    ENV.delete "CPATH"
     system bin/"tspawn", "new", "hello"
     assert_predicate testpath/"hello", :exist?
     cd "hello" do
       assert_predicate Pathname.pwd/"hello.pro", :exist?
-      system HOMEBREW_PREFIX/"opt/qt/bin/qmake"
+      system Formula["qt"].opt_bin/"qmake"
       assert_predicate Pathname.pwd/"Makefile", :exist?
       system "make"
       system bin/"treefrog", "-v"

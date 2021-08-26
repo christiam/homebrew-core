@@ -1,14 +1,18 @@
 class ShadowsocksLibev < Formula
   desc "Libev port of shadowsocks"
   homepage "https://github.com/shadowsocks/shadowsocks-libev"
-  url "https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.3/shadowsocks-libev-3.3.3.tar.gz"
-  sha256 "677356a5ed6b5ae9e32a898061db2587158ff27e245db03f4bde9b006ef12dc9"
+  url "https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.3.5/shadowsocks-libev-3.3.5.tar.gz"
+  sha256 "cfc8eded35360f4b67e18dc447b0c00cddb29cc57a3cec48b135e5fb87433488"
+  license "GPL-3.0-or-later"
+  revision 3
 
   bottle do
-    cellar :any
-    sha256 "be5c6b0ee030a71916cb8eaa46c5661f1ab92a382556d2e45b748ad6d05b1ec1" => :catalina
-    sha256 "7698e2260405590b827b65a1d2e2db18cdb62973021af8207bca803ff8f0bcad" => :mojave
-    sha256 "ffd307be32d7040633103eabab039b856df5e99f4e2512386c954dde32262c19" => :high_sierra
+    rebuild 1
+    sha256 cellar: :any,                 arm64_big_sur: "b1e8d388ea9ad7619ac942468e64697c4ee10f1d969b0ad6d779a7be95c84e08"
+    sha256 cellar: :any,                 big_sur:       "66f3fc332d7acd21599736d33995fe421d95cc89b6d7ce9057bc72a3713ec8d0"
+    sha256 cellar: :any,                 catalina:      "bbb14b97724efb4acf511b122f414a8f3f02810c7ec207413bb413063ef693ee"
+    sha256 cellar: :any,                 mojave:        "292cca782f44f284592f3538dd24dd5ebdb0d1e9a978f9f507cc78be3a8e471a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "5bd589c0338a9991d42dd08f5b470e74f3aab6843c09036d13f6b074c73a81ed"
   end
 
   head do
@@ -24,7 +28,7 @@ class ShadowsocksLibev < Formula
   depends_on "c-ares"
   depends_on "libev"
   depends_on "libsodium"
-  depends_on "mbedtls"
+  depends_on "mbedtls@2"
   depends_on "pcre"
 
   def install
@@ -46,43 +50,24 @@ class ShadowsocksLibev < Formula
     EOS
     etc.install "shadowsocks-libev.json"
 
-    inreplace Dir["man/*"], "/etc/shadowsocks-libev/config.json", "#{etc}/shadowsocks-libev.json"
-
     system "make", "install"
   end
 
-  plist_options :manual => "#{HOMEBREW_PREFIX}/opt/shadowsocks-libev/bin/ss-local -c #{HOMEBREW_PREFIX}/etc/shadowsocks-libev.json -u"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/ss-local</string>
-          <string>-c</string>
-          <string>#{etc}/shadowsocks-libev.json</string>
-          <string>-u</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"ss-local", "-c", etc/"shadowsocks-libev.json"]
+    keep_alive true
   end
 
   test do
+    server_port = free_port
+    local_port = free_port
+
     (testpath/"shadowsocks-libev.json").write <<~EOS
       {
           "server":"127.0.0.1",
-          "server_port":9998,
+          "server_port":#{server_port},
           "local":"127.0.0.1",
-          "local_port":9999,
+          "local_port":#{local_port},
           "password":"test",
           "timeout":600,
           "method":null
@@ -92,7 +77,7 @@ class ShadowsocksLibev < Formula
     client = fork { exec bin/"ss-local", "-c", testpath/"shadowsocks-libev.json" }
     sleep 3
     begin
-      system "curl", "--socks5", "127.0.0.1:9999", "github.com"
+      system "curl", "--socks5", "127.0.0.1:#{local_port}", "github.com"
     ensure
       Process.kill 9, server
       Process.wait server

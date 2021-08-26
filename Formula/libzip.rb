@@ -1,21 +1,33 @@
 class Libzip < Formula
   desc "C library for reading, creating, and modifying zip archives"
   homepage "https://libzip.org/"
-  url "https://libzip.org/download/libzip-1.5.2.tar.gz"
-  sha256 "be694a4abb2ffe5ec02074146757c8b56084dbcebf329123c84b205417435e15"
+  url "https://libzip.org/download/libzip-1.8.0.tar.xz"
+  sha256 "f0763bda24ba947e80430be787c4b068d8b6aa6027a26a19923f0acfa3dac97e"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url "https://libzip.org/download/"
+    regex(/href=.*?libzip[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    rebuild 1
-    sha256 "48097805d906d0c6febd72e06e2ba4c7de3fb98408c98538b98a16bf1e7bc066" => :catalina
-    sha256 "7aad5ff734cec8f3c7f71540ee3d16f1423cc9526893d8e60d624f6d22f7dcbc" => :mojave
-    sha256 "c3e6bfd3be85c039d1ea40706ce9921a21a2856e2b709dae38c2efb0a3996c37" => :high_sierra
-    sha256 "237b9a980bef4463dc1f88c97093312292049f3e6184986179b7e2411337a8e6" => :sierra
+    sha256 cellar: :any,                 arm64_big_sur: "1634e10d0fbece803c007a5af63f3fbc9244ef4082640830039faeb7284a7ae1"
+    sha256 cellar: :any,                 big_sur:       "f5b0d74305b2f249a8389bbee71ab51e446fcc824c950b2a954860d21e4d61b4"
+    sha256 cellar: :any,                 catalina:      "cb8041e52eb6bdf4e06aa56823e4fe0ab8b008c25a84a8048b59e6c025cd2666"
+    sha256 cellar: :any,                 mojave:        "5c0afe4c42e50e695446433cc8f0de47592f207281a01e30b4b39bd6b43096ff"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "4cff3dfdbd2565f16d6504215a03dd55bb9cd587051e89ce44bb1c326f7152fb"
   end
 
   depends_on "cmake" => :build
 
-  conflicts_with "libtcod", "minizip2",
-    :because => "libtcod, libzip and minizip2 install a `zip.h` header"
+  uses_from_macos "zip" => :test
+  uses_from_macos "bzip2"
+  uses_from_macos "openssl@1.1"
+  uses_from_macos "xz"
+  uses_from_macos "zlib"
+
+  conflicts_with "libtcod", "minizip-ng",
+    because: "libtcod, libzip and minizip-ng install a `zip.h` header"
 
   def install
     system "cmake", ".", *std_cmake_args
@@ -27,6 +39,6 @@ class Libzip < Formula
     system "zip", "file1.zip", "file1"
     touch "file2"
     system "zip", "file2.zip", "file1", "file2"
-    assert_match /\+.*file2/, shell_output("#{bin}/zipcmp -v file1.zip file2.zip", 1)
+    assert_match(/\+.*file2/, shell_output("#{bin}/zipcmp -v file1.zip file2.zip", 1))
   end
 end

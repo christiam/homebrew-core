@@ -1,22 +1,35 @@
 class Pybind11 < Formula
   desc "Seamless operability between C++11 and Python"
   homepage "https://github.com/pybind/pybind11"
-  url "https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz"
-  sha256 "1eed57bc6863190e35637290f97a20c81cfe4d9090ac0a24f3bbf08f265eb71d"
+  url "https://github.com/pybind/pybind11/archive/v2.7.1.tar.gz"
+  sha256 "616d1c42e4cf14fa27b2a4ff759d7d7b33006fdc5ad8fd603bb2c22622f27020"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "d947e7b809373b629855b26d90cdff09d0e5e59ae47cd194bf79a97715ebcc00" => :catalina
-    sha256 "d947e7b809373b629855b26d90cdff09d0e5e59ae47cd194bf79a97715ebcc00" => :mojave
-    sha256 "d947e7b809373b629855b26d90cdff09d0e5e59ae47cd194bf79a97715ebcc00" => :high_sierra
+    sha256 cellar: :any_skip_relocation, all: "d9c44c2b8b6a47806ba3a6cd8d338434cecb7c634faf88cc84e0c390e4fe85be"
   end
 
   depends_on "cmake" => :build
-  depends_on "python"
+  depends_on "python@3.9"
 
   def install
-    system "cmake", ".", "-DPYBIND11_TEST=OFF", *std_cmake_args
-    system "make", "install"
+    # Install /include and /share/cmake to the global location
+    system "cmake", "-S", ".", "-B", "build",
+           "-DPYBIND11_TEST=OFF",
+           "-DPYBIND11_NOPYTHON=ON",
+           *std_cmake_args
+    system "cmake", "--install", "build"
+
+    # Install Python package too
+    system Formula["python@3.9"].opt_bin/"python3", *Language::Python.setup_install_args(libexec)
+
+    version = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+    site_packages = "lib/python#{version}/site-packages"
+    pth_contents = "import site; site.addsitedir('#{libexec/site_packages}')\n"
+    (prefix/site_packages/"homebrew-pybind11.pth").write pth_contents
+
+    # Also pybind11-config
+    bin.install Dir[libexec/"bin/*"]
   end
 
   test do
@@ -27,10 +40,9 @@ class Pybind11 < Formula
           return i + j;
       }
       namespace py = pybind11;
-      PYBIND11_PLUGIN(example) {
-          py::module m("example", "pybind11 example plugin");
+      PYBIND11_MODULE(example, m) {
+          m.doc() = "pybind11 example plugin";
           m.def("add", &add, "A function which adds two numbers");
-          return m.ptr();
       }
     EOS
 
@@ -39,8 +51,17 @@ class Pybind11 < Formula
       example.add(1,2)
     EOS
 
-    python_flags = `python3-config --cflags --ldflags`.split(" ")
-    system ENV.cxx, "-O3", "-shared", "-std=c++11", *python_flags, "example.cpp", "-o", "example.so"
-    system "python3", "example.py"
+    version = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+    site_packages = "lib/python#{version}/site-packages"
+
+    python_flags = `#{Formula["python@3.9"].opt_bin}/python3-config --cflags --ldflags --embed`.split
+    system ENV.cxx, "-shared", "-fPIC", "-O3", "-std=c++11", "example.cpp", "-o", "example.so", *python_flags
+    system Formula["python@3.9"].opt_bin/"python3", "example.py"
+
+    test_module = shell_output("#{Formula["python@3.9"].opt_bin/"python3"} -m pybind11 --includes")
+    assert_match (libexec/site_packages).to_s, test_module
+
+    test_script = shell_output("#{opt_bin/"pybind11-config"} --includes")
+    assert_match test_module, test_script
   end
 end

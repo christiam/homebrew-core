@@ -1,18 +1,20 @@
 class Qtkeychain < Formula
   desc "Platform-independent Qt API for storing passwords securely"
   homepage "https://github.com/frankosterfeld/qtkeychain"
-  url "https://github.com/frankosterfeld/qtkeychain/archive/v0.10.0.tar.gz"
-  sha256 "5f916cd97843de550467db32d2e10f218b904af5b21cfdfcc7c6425d7dfc3ec2"
+  url "https://github.com/frankosterfeld/qtkeychain/archive/v0.12.0.tar.gz"
+  sha256 "cc547d58c1402f6724d3ff89e4ca83389d9e2bdcfd9ae3d695fcdffa50a625a8"
+  license "BSD-2-Clause"
+  revision 1
 
   bottle do
-    cellar :any
-    sha256 "fc74803523e8bcaff20f75ad93ecdc73eedb133e98e944cc569b686bb7b14706" => :catalina
-    sha256 "ecb65ad1c7ad4d6d13e1e954009866967c76c2473c0e7409735dc77cad09f16e" => :mojave
-    sha256 "bc583e9bcea87e8c2c13dedbe3cde99cf34e9c59af2f142bcfabc0569bf8c12e" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "58b0ced7662d5f0659ff7d3002d5a8b09d1fb135d1ee51a94bffbdee24d0eb58"
+    sha256 cellar: :any, big_sur:       "f97e360b724536ead639b64f637dc65ed60d90a7c2b3ca775c0af2c0e2c36873"
+    sha256 cellar: :any, catalina:      "94f6a7cef2f131e5193b1eaf7bedb7ab6d89a00de318519624b75a355cd644a4"
+    sha256 cellar: :any, mojave:        "325f6b601b8b004df1203f20d7355fa3f00c82602795ea701055b9eae577b0c5"
   end
 
   depends_on "cmake" => :build
-  depends_on "qt"
+  depends_on "qt@5"
 
   def install
     system "cmake", ".", "-DBUILD_TRANSLATIONS=OFF", *std_cmake_args
@@ -29,8 +31,8 @@ class Qtkeychain < Formula
     EOS
     system ENV.cxx, "test.cpp", "-o", "test", "-std=c++11", "-I#{include}",
                     "-L#{lib}", "-lqt5keychain",
-                    "-I#{Formula["qt"].opt_include}",
-                    "-F#{Formula["qt"].opt_lib}", "-framework", "QtCore"
+                    "-I#{Formula["qt@5"].opt_include}",
+                    "-F#{Formula["qt@5"].opt_lib}", "-framework", "QtCore"
     system "./test"
   end
 end

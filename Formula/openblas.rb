@@ -1,35 +1,50 @@
 class Openblas < Formula
   desc "Optimized BLAS library"
   homepage "https://www.openblas.net/"
-  url "https://github.com/xianyi/OpenBLAS/archive/v0.3.7.tar.gz"
-  sha256 "bde136122cef3dd6efe2de1c6f65c10955bbb0cc01a520c2342f5287c28f9379"
-  head "https://github.com/xianyi/OpenBLAS.git", :branch => "develop"
+  url "https://github.com/xianyi/OpenBLAS/archive/v0.3.17.tar.gz"
+  sha256 "df2934fa33d04fd84d839ca698280df55c690c86a5a1133b3f7266fce1de279f"
+  license "BSD-3-Clause"
+  head "https://github.com/xianyi/OpenBLAS.git", branch: "develop"
 
-  bottle do
-    cellar :any
-    sha256 "58b74b20463a5ab0cf0ae418e14cc6bed41f3fb26369c82abe001bfbd6a51b9f" => :catalina
-    sha256 "463a7d63d2f6e5f38b86f91925549424ac3c7ce07d9c29450534c949f422954b" => :mojave
-    sha256 "532b75aa999f42dfdacab3458a3a6e473cc603476906d4a44dd2bf77394bc41c" => :high_sierra
-    sha256 "eb7ee78a2cb04296541006294740a78c952ff969d26840c21a3e9eb0924d7d08" => :sierra
+  livecheck do
+    url :stable
+    strategy :github_latest
   end
 
-  keg_only :provided_by_macos,
-           "macOS provides BLAS and LAPACK in the Accelerate framework"
+  bottle do
+    sha256 cellar: :any,                 arm64_big_sur: "c9ae01370ce517ab827b58d78908765b6a786d04f6f70c86bccdb5978cecef7e"
+    sha256 cellar: :any,                 big_sur:       "1cbdb7f1dfd423ff76b92825c6a073166f555a785f012bba9ad86f3b8eae4752"
+    sha256 cellar: :any,                 catalina:      "14891978c20a81ab3b4839e5c6cc5504daee971ca39a3806a36e8a0a90a38ef0"
+    sha256 cellar: :any,                 mojave:        "a5c4b0222ae4225f96fb72046921bc5c625445e10361407dfacbc4719aa90283"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "110436100fa51f165c534e88ad6283cb666d131b857e7e3ee8d4cfa2de05b9f3"
+  end
+
+  keg_only :shadowed_by_macos, "macOS provides BLAS in Accelerate.framework"
 
   depends_on "gcc" # for gfortran
   fails_with :clang
 
   def install
+    ENV.runtime_cpu_detection
+    ENV.deparallelize # build is parallel by default, but setting -j confuses it
+
     ENV["DYNAMIC_ARCH"] = "1"
     ENV["USE_OPENMP"] = "1"
-    ENV["NO_AVX512"] = "1"
+    # Force a large NUM_THREADS to support larger Macs than the VMs that build the bottles
+    ENV["NUM_THREADS"] = "56"
+    ENV["TARGET"] = case Hardware.oldest_cpu
+    when :arm_vortex_tempest
+      "VORTEX"
+    else
+      Hardware.oldest_cpu.upcase.to_s
+    end
 
     # Must call in two steps
     system "make", "CC=#{ENV.cc}", "FC=gfortran", "libs", "netlib", "shared"
     system "make", "PREFIX=#{prefix}", "install"
 
-    lib.install_symlink "libopenblas.dylib" => "libblas.dylib"
-    lib.install_symlink "libopenblas.dylib" => "liblapack.dylib"
+    lib.install_symlink shared_library("libopenblas") => shared_library("libblas")
+    lib.install_symlink shared_library("libopenblas") => shared_library("liblapack")
   end
 
   test do

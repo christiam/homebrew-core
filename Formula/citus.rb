@@ -1,19 +1,22 @@
 class Citus < Formula
   desc "PostgreSQL-based distributed RDBMS"
   homepage "https://www.citusdata.com"
-  url "https://github.com/citusdata/citus/archive/v9.1.2.tar.gz"
-  sha256 "0f36ffc2e4e478562ca038459cb11227150b450356454fd029b078e75d28746b"
-  head "https://github.com/citusdata/citus.git"
+  url "https://github.com/citusdata/citus/archive/v10.1.2.tar.gz"
+  sha256 "cade8cfb842bac1b7522ed92f668293a316d0d3a383cca27ed7e9ef16be641d6"
+  license "AGPL-3.0-only"
+  head "https://github.com/citusdata/citus.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "ab89dd7f0b3b14db92df66ddfd9bea559feff8c3280413228ebdfbc803de106f" => :catalina
-    sha256 "e1ead7ded6d95262597dc5fc7ff7dc08564a0c410b883d94e3de72e5ce045ea0" => :mojave
-    sha256 "0aa006496f44a097bf3235e3f2e1dba8a7004e509b9aea88f6c83aa609ae9bae" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "5366b3445216b125427ad8a3272510173467d39799ea6ee01db93fe9d52cd343"
+    sha256 cellar: :any, big_sur:       "3851ceb8cb83415b6a2241c0844eadf8fa5a67e011d308d3ee3e6918188adfd9"
+    sha256 cellar: :any, catalina:      "8d41bc633847d9b9f9c9ec772e5800aac2c32f36020ff3c2d5f44220fdce1006"
+    sha256 cellar: :any, mojave:        "3adcddaac15d575f8333b1cb233bb847ecb5f9d5f82e7a11556b4687ae2196f6"
   end
 
+  depends_on "lz4"
   depends_on "postgresql"
   depends_on "readline"
+  depends_on "zstd"
 
   def install
     ENV["PG_CONFIG"] = Formula["postgresql"].opt_bin/"pg_config"
@@ -32,32 +35,5 @@ class Citus < Formula
     lib.install Dir["stage/**/lib/*"]
     include.install Dir["stage/**/include/*"]
     (share/"postgresql/extension").install Dir["stage/**/share/postgresql/extension/*"]
-  end
-
-  test do
-    pg_bin = Formula["postgresql"].opt_bin
-    pg_port = "55561"
-    system "#{pg_bin}/initdb", testpath/"test"
-    pid = fork do
-      exec("#{pg_bin}/postgres",
-           "-D", testpath/"test",
-           "-c", "shared_preload_libraries=citus",
-           "-p", pg_port)
-    end
-
-    begin
-      sleep 2
-
-      count_workers_query = "SELECT COUNT(*) FROM master_get_active_worker_nodes();"
-
-      system "#{pg_bin}/createdb", "-p", pg_port, "test"
-      system "#{pg_bin}/psql", "-p", pg_port, "-d", "test", "--command", "CREATE EXTENSION citus;"
-
-      assert_equal "0", shell_output("#{pg_bin}/psql -p #{pg_port} -d test -Atc" \
-                                     "'#{count_workers_query}'").strip
-    ensure
-      Process.kill 9, pid
-      Process.wait pid
-    end
   end
 end

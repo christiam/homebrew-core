@@ -1,20 +1,26 @@
 class BoostPython3 < Formula
   desc "C++ library for C++/Python3 interoperability"
   homepage "https://www.boost.org/"
-  url "https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2"
-  sha256 "59c9b274bc451cf91a9ba1dd2c7fdcaf5d60b1b3aa83f2c9fa143417cc660722"
-  head "https://github.com/boostorg/boost.git"
+  url "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.bz2"
+  sha256 "f0397ba6e982c4450f27bf32a2a83292aba035b827a5623a14636ea583318c41"
+  license "BSL-1.0"
+  head "https://github.com/boostorg/boost.git", branch: "master"
+
+  livecheck do
+    formula "boost"
+  end
 
   bottle do
-    cellar :any
-    sha256 "ce20b29ffbf51137476d5bce459731fd2eb9bd0f5a3a9b1758a6c2cb52b0826d" => :catalina
-    sha256 "a89c855389dba45e976613c0a818d5a1d9042f5627c27a57d825136538f95543" => :mojave
-    sha256 "ff1323cf64f2604a274486bc822bf5790f8e8eaac6b2e44e5bdabda3ecb8c661" => :high_sierra
+    sha256 cellar: :any,                 arm64_big_sur: "5c5d10ed0373c7e068e2ca80fa98ff39ac444392bbcf0d6932fe92259f0f9f4a"
+    sha256 cellar: :any,                 big_sur:       "031cfc31e2d655019467833a4c6ba4fcb7ed69f2e28798fead339cf5a1a84681"
+    sha256 cellar: :any,                 catalina:      "2f905a84c2f81d6037d16215e55e31feff2d5cccedb170e7294726d2ec3f80d9"
+    sha256 cellar: :any,                 mojave:        "9f4253a35144aabe0056e46b2c11c8c45d2fe4857b7d7cf4e2e728de19b8c044"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "cf25dc1ea9b2201258ff79c872dbbd8667ca52e7085f47164318631aae2f5ba1"
   end
 
   depends_on "numpy" => :build
   depends_on "boost"
-  depends_on "python"
+  depends_on "python@3.9"
 
   def install
     # "layout" should be synchronized with boost
@@ -31,24 +37,29 @@ class BoostPython3 < Formula
     # Boost is using "clang++ -x c" to select C compiler which breaks C++14
     # handling using ENV.cxx14. Using "cxxflags" and "linkflags" still works.
     args << "cxxflags=-std=c++14"
-    if ENV.compiler == :clang
-      args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++"
-    end
+    args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++" if ENV.compiler == :clang
 
     # disable python detection in bootstrap.sh; it guesses the wrong include
     # directory for Python 3 headers, so we configure python manually in
     # user-config.jam below.
     inreplace "bootstrap.sh", "using python", "#using python"
 
-    pyver = Language::Python.major_minor_version "python3"
-    py_prefix = Formula["python3"].opt_frameworks/"Python.framework/Versions/#{pyver}"
+    pyver = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+    py_prefix = Formula["python@3.9"].opt_frameworks/"Python.framework/Versions/#{pyver}"
+    on_linux do
+      py_prefix = Formula["python@3.9"].opt_prefix
+    end
 
     # Force boost to compile with the desired compiler
+    compiler_text = "using darwin : : #{ENV.cxx} ;"
+    on_linux do
+      compiler_text = "using gcc : : #{ENV.cxx} ;"
+    end
     (buildpath/"user-config.jam").write <<~EOS
-      using darwin : : #{ENV.cxx} ;
+      #{compiler_text}
       using python : #{pyver}
                    : python3
-                   : #{py_prefix}/include/python#{pyver}m
+                   : #{py_prefix}/include/python#{pyver}
                    : #{py_prefix}/lib ;
     EOS
 
@@ -81,17 +92,17 @@ class BoostPython3 < Formula
       }
     EOS
 
-    pyincludes = Utils.popen_read("python3-config --includes").chomp.split(" ")
-    pylib = Utils.popen_read("python3-config --ldflags").chomp.split(" ")
-    pyver = Language::Python.major_minor_version("python3").to_s.delete(".")
+    pyincludes = shell_output("#{Formula["python@3.9"].opt_bin}/python3-config --includes").chomp.split
+    pylib = shell_output("#{Formula["python@3.9"].opt_bin}/python3-config --ldflags --embed").chomp.split
+    pyver = Language::Python.major_minor_version(Formula["python@3.9"].opt_bin/"python3").to_s.delete(".")
 
-    system ENV.cxx, "-shared", "hello.cpp", "-L#{lib}", "-lboost_python#{pyver}", "-o",
+    system ENV.cxx, "-shared", "-fPIC", "hello.cpp", "-L#{lib}", "-lboost_python#{pyver}", "-o",
            "hello.so", *pyincludes, *pylib
 
     output = <<~EOS
       import hello
       print(hello.greet())
     EOS
-    assert_match "Hello, world!", pipe_output("python3", output, 0)
+    assert_match "Hello, world!", pipe_output(Formula["python@3.9"].opt_bin/"python3", output, 0)
   end
 end

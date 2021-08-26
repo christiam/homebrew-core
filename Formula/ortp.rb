@@ -1,27 +1,32 @@
 class Ortp < Formula
   desc "Real-time transport protocol (RTP, RFC3550) library"
   homepage "https://www.linphone.org/technical-corner/ortp"
-  url "https://www.linphone.org/releases/sources/ortp/ortp-1.0.2.tar.gz"
-  sha256 "a51551194332ac62b47865dc1e60893ece4922c489a7b0a780b8be562978d804"
+  url "https://gitlab.linphone.org/BC/public/ortp/-/archive/5.0.8/ortp-5.0.8.tar.bz2"
+  sha256 "643071c1314b7d5ab97370eac5a05caf25301ac5dfa16f6cd7de613c4f0a8394"
+  license "GPL-3.0-or-later"
+  head "https://gitlab.linphone.org/BC/public/ortp.git"
 
   bottle do
-    sha256 "f49949830b4e6f09bb69c81ff2e2f8f3653bae1d648bc57db393bb92195fc260" => :catalina
-    sha256 "1659170fed5ce087fe92e8bca8f8666ce1a2573220897df535a035582b8bd45b" => :mojave
-    sha256 "183386b78f9bb94670265af5b717b604d678b399517e7ee9848b6999209755e6" => :high_sierra
+    sha256 cellar: :any, arm64_big_sur: "f6ca70adb471afdb2171b4863d7185c68945a7be16b51a04890f16e16e277840"
+    sha256 cellar: :any, big_sur:       "34844a0ba10a8a22b3711e7e477b0c9851b4aacffd254afb63b607be9eca7627"
+    sha256 cellar: :any, catalina:      "92477b658b98f4b7c64a64254ff39ec42276c6adca4bf3d14d16899545a549bc"
+    sha256 cellar: :any, mojave:        "bb36c289463dcee99e195be4da51d677e5841231d290788bee884adf87050205"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
-  depends_on "mbedtls"
+  depends_on "mbedtls@2"
 
+  # bctoolbox appears to follow ortp's version. This can be verified at the GitHub mirror:
+  # https://github.com/BelledonneCommunications/bctoolbox
   resource "bctoolbox" do
-    url "https://www.linphone.org/releases/sources/bctoolbox/bctoolbox-0.6.0.tar.gz"
-    sha256 "4657e1970df262f77e47dee63b1135a5e063b63b0c42cfe7f41642b22e3831a8"
+    url "https://gitlab.linphone.org/BC/public/bctoolbox/-/archive/5.0.8/bctoolbox-5.0.8.tar.bz2"
+    sha256 "c3e4d067f8f0e6526fa70c4d5dffa04b937c58bfea14fde0227fcd50d34eae86"
   end
 
   def install
     resource("bctoolbox").stage do
-      args = std_cmake_args + %W[
+      args = std_cmake_args.reject { |s| s["CMAKE_INSTALL_PREFIX"] } + %W[
         -DCMAKE_INSTALL_PREFIX=#{libexec}
         -DENABLE_TESTS_COMPONENT=OFF
       ]
@@ -29,14 +34,12 @@ class Ortp < Formula
       system "make", "install"
     end
 
-    libbctoolbox = (libexec/"lib/libbctoolbox.dylib").readlink
-    MachO::Tools.change_dylib_id("#{libexec}/lib/libbctoolbox.dylib",
-                                 "#{libexec}/lib/#{libbctoolbox}")
-
     ENV.prepend_path "PKG_CONFIG_PATH", libexec/"lib/pkgconfig"
 
     args = std_cmake_args + %W[
       -DCMAKE_PREFIX_PATH=#{libexec}
+      -DCMAKE_C_FLAGS=-I#{libexec}/include
+      -DCMAKE_CXX_FLAGS=-I#{libexec}/include
       -DENABLE_DOC=NO
     ]
     mkdir "build" do

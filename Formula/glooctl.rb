@@ -2,30 +2,29 @@ class Glooctl < Formula
   desc "Envoy-Powered API Gateway"
   homepage "https://docs.solo.io/gloo/latest/"
   url "https://github.com/solo-io/gloo.git",
-      :tag      => "v1.3.0",
-      :revision => "6002921c48a901d6f4cca9ab801400b231088cfc"
+      tag:      "v1.8.9",
+      revision: "c55eec54a6452f616538829b527772ff91844ea4"
+  license "Apache-2.0"
   head "https://github.com/solo-io/gloo.git"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "e59c860fe4a818a6547ee529bac390e0970c84f041bbeddcbdba1830111f34c5" => :catalina
-    sha256 "ce4827031f0ef884f0ae50450195e15b51fae3e8af3341a4d35c16884d1cb60b" => :mojave
-    sha256 "ef4ef27f00830982defa16206543b14bda2a8ae991f41612b1c5d77ca9e6b936" => :high_sierra
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on "dep" => :build
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "7266a7d56abd5147c70e360f6168904b362f685df7bfb057b25a32a3916167bf"
+    sha256 cellar: :any_skip_relocation, big_sur:       "ff3f8804dbacf6a867e5e336ed2e8cc29cb2639684190b278a8e913486f6c1f8"
+    sha256 cellar: :any_skip_relocation, catalina:      "7bb6d808c10ecb6477c9c041150244d8b52a2706cf7f1ee7eaa3ab2320e1acba"
+    sha256 cellar: :any_skip_relocation, mojave:        "3323dbaea7ea9424226614f19a3cfa3a2f645ee66992fcf89a9fe86f9102a2a3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "384800ac1ac8221971d0cb3040e6ca2266c14b6155761701fc8a3f3b380b6c3b"
+  end
+
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    dir = buildpath/"src/github.com/solo-io/gloo"
-    dir.install buildpath.children - [buildpath/".brew_home"]
-
-    cd dir do
-      system "dep", "ensure", "-vendor-only"
-      system "make", "glooctl", "TAGGED_VERSION=v#{version}"
-      bin.install "_output/glooctl"
-    end
+    system "make", "glooctl", "TAGGED_VERSION=v#{version}"
+    bin.install "_output/glooctl"
   end
 
   test do
@@ -40,6 +39,6 @@ class Glooctl < Formula
 
     # Should error out as it needs access to a Kubernetes cluster to operate correctly
     status_output = shell_output("#{bin}/glooctl get proxy 2>&1", 1)
-    assert_match "failed to create proxy client", status_output
+    assert_match "failed to create kube client", status_output
   end
 end

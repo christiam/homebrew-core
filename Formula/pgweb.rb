@@ -1,39 +1,32 @@
 class Pgweb < Formula
   desc "Web-based PostgreSQL database browser"
   homepage "https://sosedoff.github.io/pgweb/"
-  url "https://github.com/sosedoff/pgweb/archive/v0.11.5.tar.gz"
-  sha256 "d51450053e481e897b6bdf84b665ecb8a453843bc35e1057c3e51d89be19edba"
+  url "https://github.com/sosedoff/pgweb/archive/v0.11.8.tar.gz"
+  sha256 "b391dee6e88c534db82d71515d7efa642e6a34bcded93250fd3f8c2150e75cd9"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "6c2b16bfbaf05d845ee3fed44040940fda9c7e6ac715c77b822ef5e5cc46bd24" => :catalina
-    sha256 "94d27f7b82dc0cd81b8f396bfdc5f60aaaff808b5958ae869b5e7708394c0cc9" => :mojave
-    sha256 "226cc86baf7f47f8c38688157e11d70d79a305cd1632f9c638e5936759f59f10" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "6f12b6b5957c31af8f22c5ab8df4fa094ce594aa15207f0d29f2a390499ee96d"
+    sha256 cellar: :any_skip_relocation, big_sur:       "a02d31f0e35883aa3bf87d2644f8d2388bb93c5009c91c59bfc04382bd4282c3"
+    sha256 cellar: :any_skip_relocation, catalina:      "4f8da0cec857035c52cb0d867f11dfeb9b25713079f4d5b1837e6123ea741f47"
+    sha256 cellar: :any_skip_relocation, mojave:        "ca983073d0229389be16276d51550a2d2a52cc9fa80dbddeca1a0821d790e989"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "f712d2198798bca0e0788f6aa65a9d95bb2b609f34d53983685b7153341a21e3"
   end
 
   depends_on "go" => :build
-  depends_on "go-bindata" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/sosedoff/pgweb").install buildpath.children
+    ldflags = %W[
+      -s -w
+      -X github.com/sosedoff/pgweb/pkg/command.BuildTime=#{time.iso8601}
+      -X github.com/sosedoff/pgweb/pkg/command.GoVersion=#{Formula["go"].version}
+    ].join(" ")
 
-    cd "src/github.com/sosedoff/pgweb" do
-      # Avoid running `go get`
-      inreplace "Makefile", "go get", ""
-
-      system "make", "build"
-      bin.install "pgweb"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args(ldflags: ldflags)
   end
 
   test do
-    require "socket"
-
-    server = TCPServer.new(0)
-    port = server.addr[1]
-    server.close
+    port = free_port
 
     begin
       pid = fork do

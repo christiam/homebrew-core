@@ -1,39 +1,35 @@
 class Zabbix < Formula
   desc "Availability and monitoring solution"
   homepage "https://www.zabbix.com/"
-  url "https://downloads.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/4.4.4/zabbix-4.4.4.tar.gz"
-  sha256 "7bf7ede7d182d4ff4f8321b9f3aafe6da50ee33696cf5fcc4811f084da37865f"
+  url "https://cdn.zabbix.com/zabbix/sources/stable/5.4/zabbix-5.4.3.tar.gz"
+  sha256 "dbbc843c8119f1f63d7378588d5eb5a46c22f32f86428bb79b9872191342bbc2"
+  license "GPL-2.0-or-later"
+  head "https://github.com/zabbix/zabbix.git", branch: "master"
 
   bottle do
-    sha256 "e07bd1222d8b09343f5492affac828807a52997b796a9d8e2b5d896a4a9b8b93" => :catalina
-    sha256 "8696f7cebe346fc0cda905ebed1fefbe30f32a772d01d79fb81b6cc8e6a74b70" => :mojave
-    sha256 "9e7351140f512c7eb9b6dbb69608f6b6351a2cd46b3750274f4129d14ef49c04" => :high_sierra
+    sha256 arm64_big_sur: "035570354333169d9f8e7a43ca0a0707e9adb004c9709dc00b4b2e02a7977436"
+    sha256 big_sur:       "343653c7f8968a11db3355add8bc11883f20f9765a38ead4d452321b97cba19a"
+    sha256 catalina:      "7de5a411b7e986fbd88abfcd91bfcd0a9f946d184b042441b4e25674786ec42a"
+    sha256 mojave:        "c6c99115c81c102471826b0f61c4f95ee47d386bafca3859177a5456b986d886"
+    sha256 x86_64_linux:  "ff7e59909b33853b63a02c3afbd5f26c72f0c984aa8a69b0da8ccd1c4c1d7c7e"
   end
 
   depends_on "openssl@1.1"
   depends_on "pcre"
 
-  def brewed_or_shipped(db_config)
-    brewed_db_config = "#{HOMEBREW_PREFIX}/bin/#{db_config}"
-    (File.exist?(brewed_db_config) && brewed_db_config) || which(db_config)
-  end
-
   def install
-    sdk = MacOS::CLT.installed? ? "" : MacOS.sdk_path
-
     args = %W[
       --disable-dependency-tracking
       --prefix=#{prefix}
       --sysconfdir=#{etc}/zabbix
       --enable-agent
-      --with-iconv=#{sdk}/usr
       --with-libpcre=#{Formula["pcre"].opt_prefix}
       --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
     ]
 
-    if MacOS.version == :el_capitan && MacOS::Xcode.version >= "8.0"
-      inreplace "configure", "clock_gettime(CLOCK_REALTIME, &tp);",
-                             "undefinedgibberish(CLOCK_REALTIME, &tp);"
+    on_macos do
+      sdk = MacOS::CLT.installed? ? "" : MacOS.sdk_path
+      args << "--with-iconv=#{sdk}/usr"
     end
 
     system "./configure", *args

@@ -3,23 +3,34 @@ class Nginx < Formula
   homepage "https://nginx.org/"
   # Use "mainline" releases only (odd minor version number), not "stable"
   # See https://www.nginx.com/blog/nginx-1-12-1-13-released/ for why
-  url "https://nginx.org/download/nginx-1.17.7.tar.gz"
-  sha256 "b62756842807e5693b794e5d0ae289bd8ae5b098e66538b2a91eb80f25c591ff"
-  head "https://hg.nginx.org/nginx/", :using => :hg
+  url "https://nginx.org/download/nginx-1.21.1.tar.gz"
+  sha256 "68ba0311342115163a0354cad34f90c05a7e8bf689dc498abf07899eda155560"
+  license "BSD-2-Clause"
+  head "https://hg.nginx.org/nginx/", using: :hg
+
+  livecheck do
+    url :homepage
+    regex(%r{nginx[._-]v?(\d+(?:\.\d+)+)</a>\nmainline version}i)
+  end
 
   bottle do
-    sha256 "b8162fd6a84eb12c7c46bbee564f0776012aee504eb98efc42d5c559733b32a3" => :catalina
-    sha256 "58af10ed37372f6946172e5b855518c587e2eb3dc87ae183407e8518241ecfa7" => :mojave
-    sha256 "54ba160e942f3dcfd9d557b2bd3b76159078138c08da6f7cd2ca301286c7b116" => :high_sierra
+    rebuild 1
+    sha256 arm64_big_sur: "2a169cd066060e3ec54204a85ffcbcbe79fc53b9dfe861b875e316ddceb86b14"
+    sha256 big_sur:       "5a99f1df27318e01a93e318011d3d050a173f3277cdcf3a5fc3dc8e70938b012"
+    sha256 catalina:      "06b290f2bad524132be51f9a380e505592cdb389a5c9e291636cc13e8d2d07a1"
+    sha256 mojave:        "8d87e8dc7692cd9681a5d54bc236ab3f27bef7f4c80824e169d8fb42c629c7fa"
+    sha256 x86_64_linux:  "88eb87f5826e49c05a438c4af8c0d973064fafa729c1d9656da41227dcadb7b7"
   end
 
   depends_on "openssl@1.1"
   depends_on "pcre"
 
+  uses_from_macos "xz" => :build
+
   def install
     # keep clean copy of source for compiling dynamic modules e.g. passenger
     (pkgshare/"src").mkpath
-    system "tar", "-cJf", (pkgshare/"src/src.tar.xz"), "--options", "compression-level=9", "."
+    system "tar", "-cJf", (pkgshare/"src/src.tar.xz"), "."
 
     # Changes default port to 8080
     inreplace "conf/nginx.conf" do |s|
@@ -117,9 +128,7 @@ class Nginx < Formula
     # and Homebrew used to suggest the user copy the plist for nginx to their
     # ~/Library/LaunchAgents directory. So we need to have a symlink there
     # for such cases
-    if rack.subdirs.any? { |d| d.join("sbin").directory? }
-      sbin.install_symlink bin/"nginx"
-    end
+    sbin.install_symlink bin/"nginx" if rack.subdirs.any? { |d| d.join("sbin").directory? }
   end
 
   def caveats
@@ -133,30 +142,10 @@ class Nginx < Formula
     EOS
   end
 
-  plist_options :manual => "nginx"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <false/>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/nginx</string>
-            <string>-g</string>
-            <string>daemon off;</string>
-        </array>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"nginx", "-g", "daemon off;"]
+    keep_alive false
+    working_dir HOMEBREW_PREFIX
   end
 
   test do

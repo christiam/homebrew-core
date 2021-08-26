@@ -1,21 +1,22 @@
 class Offlineimap < Formula
   desc "Synchronizes emails between two repositories"
   homepage "https://www.offlineimap.org/"
-  url "https://github.com/OfflineIMAP/offlineimap/archive/v7.3.0.tar.gz"
-  sha256 "d8378e82e392c70f5c20cb08705687da30cd427f2bca539939311512777e6659"
+  url "https://files.pythonhosted.org/packages/09/12/73db8d38fea8ec3536cbccb8286b46b426639aff7e166840fa5e68e889e2/offlineimap-7.3.4.tar.gz"
+  sha256 "5dbd7167b8729d87caa50bed63562868b6634b888348d9bc088a721530c82fef"
+  license "GPL-2.0-or-later"
   head "https://github.com/OfflineIMAP/offlineimap.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "deaa78edce86b63e6d24b563877f6c246c2d1cf2987da172174fbd2207112eb1" => :catalina
-    sha256 "deaa78edce86b63e6d24b563877f6c246c2d1cf2987da172174fbd2207112eb1" => :mojave
-    sha256 "deaa78edce86b63e6d24b563877f6c246c2d1cf2987da172174fbd2207112eb1" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "ddd56697d3c6e9caf9ce43cb18b4c8c5e2b71dda041363be7b3f02487700edd0"
+    sha256 cellar: :any_skip_relocation, big_sur:       "022f1f1fb23f151854e050d510398d0c156d71fdb718ac32c5f7061152732b92"
+    sha256 cellar: :any_skip_relocation, catalina:      "022f1f1fb23f151854e050d510398d0c156d71fdb718ac32c5f7061152732b92"
+    sha256 cellar: :any_skip_relocation, mojave:        "8bad1b2782ecd2d85bb388c616d57ad98f10886384711dbf36447269d076f0d9"
   end
 
-  depends_on "asciidoc" => :build
-  depends_on "docbook-xsl" => :build
-  depends_on "sphinx-doc" => :build
-  depends_on "python@2" # does not support Python 3
+  depends_on :macos # Due to Python 2 (Will never support Python 3)
+  # https://github.com/OfflineIMAP/offlineimap/issues/616#issuecomment-491003691
+  uses_from_macos "libxml2"
+  uses_from_macos "libxslt"
 
   resource "rfc6555" do
     url "https://files.pythonhosted.org/packages/58/a8/1dfba2db1f744657065562386069e547eefea9432d3f520d4af5b5fabd28/rfc6555-0.0.0.tar.gz"
@@ -23,18 +24,18 @@ class Offlineimap < Formula
   end
 
   resource "selectors2" do
-    url "https://files.pythonhosted.org/packages/a4/54/d690d931777ca7310562997fab09019582e6e557984c02d7647f3654f7f5/selectors2-2.0.1.tar.gz"
-    sha256 "81b77c4c6f607248b1d6bbdb5935403fef294b224b842a830bbfabb400c81884"
+    url "https://files.pythonhosted.org/packages/86/72/27ccb21c1ff9fa87e1ba45e38045722b4eff345ba61760224793560638f4/selectors2-2.0.2.tar.gz"
+    sha256 "1f1bbaac203a23fbc851dc1b5a6e92c50698cc8cefa5873eb5b89eef53d1d82b"
   end
 
   resource "six" do
-    url "https://files.pythonhosted.org/packages/dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz"
-    sha256 "d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
+    url "https://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz"
+    sha256 "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"
   end
 
   def install
-    xy = Language::Python.major_minor_version "python2"
-    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python#{xy}/site-packages"
+    ENV.delete("PYTHONPATH")
+    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
 
     resources.each do |r|
       r.stage do
@@ -42,62 +43,63 @@ class Offlineimap < Formula
       end
     end
 
-    ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
-    system "make", "docs"
-    man1.install "docs/offlineimap.1"
-    man7.install "docs/offlineimapui.7"
+    # Remove hardcoded python2 that does not exist on high-sierra or mojave
+    inreplace "Makefile", "python2", "python"
+    inreplace "bin/offlineimap", "python2", "python"
 
     etc.install "offlineimap.conf", "offlineimap.conf.minimal"
     libexec.install "bin/offlineimap" => "offlineimap.py"
     libexec.install "offlineimap"
     (bin/"offlineimap").write_env_script(libexec/"offlineimap.py",
-      :PYTHONPATH => ENV["PYTHONPATH"])
+      PYTHONPATH: ENV["PYTHONPATH"])
   end
 
-  def caveats; <<~EOS
-    To get started, copy one of these configurations to ~/.offlineimaprc:
-    * minimal configuration:
-        cp -n #{etc}/offlineimap.conf.minimal ~/.offlineimaprc
+  def caveats
+    <<~EOS
+      To get started, copy one of these configurations to ~/.offlineimaprc:
+      * minimal configuration:
+          cp -n #{etc}/offlineimap.conf.minimal ~/.offlineimaprc
 
-    * advanced configuration:
-        cp -n #{etc}/offlineimap.conf ~/.offlineimaprc
-  EOS
+      * advanced configuration:
+          cp -n #{etc}/offlineimap.conf ~/.offlineimaprc
+    EOS
   end
 
-  plist_options :manual => "offlineimap"
+  plist_options manual: "offlineimap"
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>EnvironmentVariables</key>
+  def plist
+    <<~EOS
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
         <dict>
-          <key>PATH</key>
-          <string>/usr/bin:/bin:/usr/sbin:/sbin:#{HOMEBREW_PREFIX}/bin</string>
+          <key>EnvironmentVariables</key>
+          <dict>
+            <key>PATH</key>
+            <string>/usr/bin:/bin:/usr/sbin:/sbin:#{HOMEBREW_PREFIX}/bin</string>
+          </dict>
+          <key>KeepAlive</key>
+          <false/>
+          <key>Label</key>
+          <string>#{plist_name}</string>
+          <key>ProgramArguments</key>
+          <array>
+            <string>#{opt_bin}/offlineimap</string>
+            <string>-q</string>
+            <string>-u</string>
+            <string>basic</string>
+          </array>
+          <key>StartInterval</key>
+          <integer>300</integer>
+          <key>RunAtLoad</key>
+          <true />
+          <key>StandardErrorPath</key>
+          <string>/dev/null</string>
+          <key>StandardOutPath</key>
+          <string>/dev/null</string>
         </dict>
-        <key>KeepAlive</key>
-        <false/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/offlineimap</string>
-          <string>-q</string>
-          <string>-u</string>
-          <string>basic</string>
-        </array>
-        <key>StartInterval</key>
-        <integer>300</integer>
-        <key>RunAtLoad</key>
-        <true />
-        <key>StandardErrorPath</key>
-        <string>/dev/null</string>
-        <key>StandardOutPath</key>
-        <string>/dev/null</string>
-      </dict>
-    </plist>
-  EOS
+      </plist>
+    EOS
   end
 
   test do

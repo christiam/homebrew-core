@@ -1,20 +1,26 @@
 class IrcdHybrid < Formula
   desc "High-performance secure IRC server"
-  homepage "http://www.ircd-hybrid.org/"
-  url "https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.2.24/ircd-hybrid-8.2.24.tgz"
-  sha256 "eaa42d8bf10c0e619e3bda96f35d31bb20715305a85a1386cfbc6b8761fed50e"
-  revision 1
+  homepage "https://www.ircd-hybrid.org/"
+  url "https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.2.39/ircd-hybrid-8.2.39.tgz"
+  sha256 "035d271f6b0dd451157f80146d189bc1c9b84cc9ba1b7ad06fd72ee5108e6e4d"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/ircd-hybrid[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    sha256 "de9ce625b777bf066d1d0b2933443618b677fe74387f7a3d2f07ff856605f1c0" => :catalina
-    sha256 "478efdf1f24ce2baa47511c4cfa2c451703140c760186a8845fecc765c3b38c4" => :mojave
-    sha256 "36d3e9d28b01f104593703ebe93a230a170247090e78b492cee72eb55c3cedcc" => :high_sierra
-    sha256 "f61894f34fb608a97f4df370f9f466a129f418d8eb48781fe936ff5f145c2c5a" => :sierra
+    sha256 arm64_big_sur: "b31fc7ba489af06e2decf331466810c4477774e3c7af42fcbba77882e535c97a"
+    sha256 big_sur:       "c0b51453c0d7c82c6fe504fcb3d7de3aaf181774621ecdfb1a298bc21bebe6ee"
+    sha256 catalina:      "c918bce271461b22e1eb2632db3c55ea82ba8b3e3822b1acf6e0dc09a804cda4"
+    sha256 mojave:        "53db2d5110d8a486bbb7ed75858f5920838abc4c263e8e732814a87d0015575a"
+    sha256 x86_64_linux:  "fc31f26e809d59c021617055aa26a5f318ba101ce8311c18afbb08233c959627"
   end
 
   depends_on "openssl@1.1"
 
-  conflicts_with "ircd-irc2", :because => "both install an `ircd` binary"
+  conflicts_with "ircd-irc2", because: "both install an `ircd` binary"
 
   # ircd-hybrid needs the .la files
   skip_clean :la
@@ -31,36 +37,18 @@ class IrcdHybrid < Formula
     etc.install "doc/reference.conf" => "ircd.conf"
   end
 
-  def caveats; <<~EOS
-    You'll more than likely need to edit the default settings in the config file:
-      #{etc}/ircd.conf
-  EOS
+  def caveats
+    <<~EOS
+      You'll more than likely need to edit the default settings in the config file:
+        #{etc}/ircd.conf
+    EOS
   end
 
-  plist_options :manual => "ircd"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <false/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/ircd</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{HOMEBREW_PREFIX}</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/ircd.log</string>
-    </dict>
-    </plist>
-  EOS
+  service do
+    run opt_bin/"ircd"
+    keep_alive false
+    working_dir HOMEBREW_PREFIX
+    error_log_path var/"ircd.log"
   end
 
   test do

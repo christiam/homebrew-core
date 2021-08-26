@@ -1,17 +1,18 @@
 class Inform6 < Formula
   desc "Design system for interactive fiction"
   homepage "https://inform-fiction.org/inform6.html"
-  url "https://ifarchive.org/if-archive/infocom/compilers/inform6/source/old/inform-6.33-6.12.1.tar.gz"
-  version "6.33-6.12.1"
-  sha256 "9170d6a0283aa65e1205621e89f78d674c8df978ee9c0b1c67f8b1aea4722a77"
-  revision 1
+  url "https://ifarchive.org/if-archive/infocom/compilers/inform6/source/inform-6.35-r2.tar.gz"
+  version "6.35-r2"
+  sha256 "5b08987ec4fd1b06f3c0769c7fa13607a7387ff9f901ed375916846b4217582c"
+  license "Artistic-2.0"
   head "https://gitlab.com/DavidGriffith/inform6unix.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "451af7c99925f78d66fff29b745b6607710b3e03282ba498a82277d00cd49d9c" => :catalina
-    sha256 "b423cc4b764b8ffda3d2f95aa2ec0a1f917455ca7fbb2969dd6aecdf818ed3c5" => :mojave
-    sha256 "0755c9d4c5994a6f4ebe4c74f8bb1e93665de66ae65c89c85120396edc85550d" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "045dd5e16b6eb02c202d366860e7aaabc0a3af6a934fd061ac7fed5177fe31a7"
+    sha256 cellar: :any_skip_relocation, big_sur:       "9786ae0a2fe967eb5c016b11f7c7820ad10368028fd3adcbb580f8cb16e48350"
+    sha256 cellar: :any_skip_relocation, catalina:      "93637b51aab07fd75de01b2e95d128bc56993ef99333df1183ffa14b5ab80961"
+    sha256 cellar: :any_skip_relocation, mojave:        "c8f2f9c75d25a79e0e3a379fcda5768724f2ea8eb328c1b083f49bdd5b11045b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "376492f4b617b4efcd3c6bc8ee154dbedf13284649c989410339ce0cc0cce663"
   end
 
   resource "Adventureland.inf" do
@@ -20,7 +21,11 @@ class Inform6 < Formula
   end
 
   def install
-    system "make", "PREFIX=#{prefix}", "MAN_PREFIX=#{man}", "install"
+    # Parallel install fails at:
+    # install -d -m 755 /usr/local/Cellar/inform6/6.35-r2/share/inform/punyinform/documentation
+    # install: /usr/local/Cellar/inform6/6.35-r2/bin/punyinform.sh: Not a directory
+    ENV.deparallelize
+    system "make", "PREFIX=#{prefix}", "MAN_PREFIX=#{man}", "MANDIR=#{man1}", "install"
   end
 
   test do

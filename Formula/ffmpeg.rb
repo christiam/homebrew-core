@@ -1,21 +1,30 @@
 class Ffmpeg < Formula
   desc "Play, record, convert, and stream audio and video"
   homepage "https://ffmpeg.org/"
-  url "https://ffmpeg.org/releases/ffmpeg-4.2.2.tar.xz"
-  sha256 "cb754255ab0ee2ea5f66f8850e1bd6ad5cac1cd855d0a2f4990fb8c668b0d29c"
+  url "https://ffmpeg.org/releases/ffmpeg-4.4.tar.xz"
+  sha256 "06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909"
+  # None of these parts are used by default, you have to explicitly pass `--enable-gpl`
+  # to configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
+  license "GPL-2.0-or-later"
+  revision 2
   head "https://github.com/FFmpeg/FFmpeg.git"
 
+  livecheck do
+    url "https://ffmpeg.org/download.html"
+    regex(/href=.*?ffmpeg[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+
   bottle do
-    sha256 "3d436d5b28b674dd972e448fb4e6d7844075fbfa4266eb671eb72555d0294709" => :catalina
-    sha256 "94596bb3553a4d09107a5900064f5e0ccc01d8891888d184e67a0ac34d6f4f55" => :mojave
-    sha256 "c740004bfdaadc7adeda4cc79745fb3e0a3b2b52ba35f54664e06a351ce5104f" => :high_sierra
+    sha256 arm64_big_sur: "d603441a90e72b165e70ef1787b2045c6e969f077dcadd1529d04162fbd18ab3"
+    sha256 big_sur:       "9da28933b9f1abc3b1cf92382d1a8ea051c98f9dd0f4ef47e8d37d2aa9a4769a"
+    sha256 catalina:      "3fcc129951906c60f6e2130131fde64e449bc562a605f64be74fc950cac930ea"
+    sha256 mojave:        "8becf08fae7806a6365b489c3dcde8f6f0ddb49a64e96386c2c190a15604a486"
   end
 
   depends_on "nasm" => :build
   depends_on "pkg-config" => :build
-  depends_on "texi2html" => :build
-
   depends_on "aom"
+  depends_on "dav1d"
   depends_on "fontconfig"
   depends_on "freetype"
   depends_on "frei0r"
@@ -30,29 +39,36 @@ class Ffmpeg < Formula
   depends_on "opencore-amr"
   depends_on "openjpeg"
   depends_on "opus"
-  depends_on "rtmpdump"
+  depends_on "rav1e"
   depends_on "rubberband"
   depends_on "sdl2"
   depends_on "snappy"
   depends_on "speex"
+  depends_on "srt"
   depends_on "tesseract"
   depends_on "theora"
+  depends_on "webp"
   depends_on "x264"
   depends_on "x265"
   depends_on "xvid"
   depends_on "xz"
+  depends_on "zeromq"
+  depends_on "zimg"
+
+  uses_from_macos "bzip2"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "libxv"
+  end
 
   def install
-    # Work around Xcode 11 clang bug
-    # https://bitbucket.org/multicoreware/x265/issues/514/wrong-code-generated-on-macos-1015
-    ENV.append_to_cflags "-fno-stack-check" if DevelopmentTools.clang_build_version >= 1010
-
     args = %W[
       --prefix=#{prefix}
       --enable-shared
       --enable-pthreads
       --enable-version3
-      --enable-avresample
       --cc=#{ENV.cc}
       --host-cflags=#{ENV.cflags}
       --host-ldflags=#{ENV.ldflags}
@@ -61,17 +77,22 @@ class Ffmpeg < Formula
       --enable-gpl
       --enable-libaom
       --enable-libbluray
+      --enable-libdav1d
       --enable-libmp3lame
       --enable-libopus
+      --enable-librav1e
       --enable-librubberband
       --enable-libsnappy
+      --enable-libsrt
       --enable-libtesseract
       --enable-libtheora
       --enable-libvidstab
       --enable-libvorbis
       --enable-libvpx
+      --enable-libwebp
       --enable-libx264
       --enable-libx265
+      --enable-libxml2
       --enable-libxvid
       --enable-lzma
       --enable-libfontconfig
@@ -81,13 +102,22 @@ class Ffmpeg < Formula
       --enable-libopencore-amrnb
       --enable-libopencore-amrwb
       --enable-libopenjpeg
-      --enable-librtmp
       --enable-libspeex
       --enable-libsoxr
-      --enable-videotoolbox
+      --enable-libzmq
+      --enable-libzimg
       --disable-libjack
       --disable-indev=jack
     ]
+
+    # libavresample has been deprecated and removed but some non-updated formulae are still linked to it
+    # Remove in the next release
+    args << "--enable-avresample" unless build.head?
+
+    on_macos do
+      # Needs corefoundation, coremedia, corevideo
+      args << "--enable-videotoolbox"
+    end
 
     system "./configure", *args
     system "make", "install"
@@ -97,7 +127,7 @@ class Ffmpeg < Formula
     bin.install Dir["tools/*"].select { |f| File.executable? f }
 
     # Fix for Non-executables that were installed to bin/
-    mv bin/"python", pkgshare/"python", :force => true
+    mv bin/"python", pkgshare/"python", force: true
   end
 
   test do

@@ -1,15 +1,16 @@
 class Mrboom < Formula
   desc "Eight player Bomberman clone"
   homepage "http://mrboom.mumblecore.org/"
-  url "https://github.com/Javanaise/mrboom-libretro/archive/4.8.tar.gz"
-  sha256 "ca41016ced65840d364556ba7477f1d1af2d5b72c98dd1bdf406bea75ad28b71"
+  url "https://github.com/Javanaise/mrboom-libretro/releases/download/5.2/MrBoom-src-5.2.454d614.tar.gz"
+  version "5.2"
+  sha256 "50e4fe4bc74b23ac441499c756c4575dfe9faab9e787a3ab942a856ac63cf10d"
+  license "MIT"
 
   bottle do
-    cellar :any
-    sha256 "154f40d61ea23fa239392be94ebfa6387edc23693eb1be741da2857f749d3e30" => :catalina
-    sha256 "4ba2c8e5e221b0caede7a888554151b21f66cf1dcb0a656b6f311f62f406a788" => :mojave
-    sha256 "1508a8b273950f25e649b809a696a58b2fdc17a8cf13114ff117719d8bf1f95a" => :high_sierra
-    sha256 "171552ccf311dddbcf124c8f17d424f10d54e48312dffdd8fc3b906e6c700e87" => :sierra
+    sha256 cellar: :any, arm64_big_sur: "90484ee7a62a29aa82242664b917340def45c3b999a7d21197ac10e020617194"
+    sha256 cellar: :any, big_sur:       "904cd506e99c6269809fe4c593263de7cc1f0746fe0c5b5180aa63ef522ca212"
+    sha256 cellar: :any, catalina:      "7fc60e5a37d093f2311b797c5822dbeb098cdf47c038c808496973d29f563f2c"
+    sha256 cellar: :any, mojave:        "262fab23ed3b5a3b80948ae4fb4eca1c0c0cad04220a031a731905d812aebaae"
   end
 
   depends_on "cmake" => :build
@@ -28,12 +29,12 @@ class Mrboom < Formula
     require "expect"
     require "timeout"
     PTY.spawn(bin/"mrboom", "-m", "-f 0", "-z") do |r, _w, pid|
-      sleep 1
+      sleep 15
       Process.kill "SIGINT", pid
       assert_match "monster", r.expect(/monster/, 10)[0]
     ensure
       begin
-        Timeout.timeout(10) do
+        Timeout.timeout(30) do
           Process.wait pid
         end
       rescue Timeout::Error

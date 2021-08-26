@@ -1,33 +1,48 @@
 class Dnsdist < Formula
   desc "Highly DNS-, DoS- and abuse-aware loadbalancer"
   homepage "https://www.dnsdist.org/"
-  url "https://downloads.powerdns.com/releases/dnsdist-1.3.2.tar.bz2"
-  sha256 "0be7704e5a418a8ed6908fc110ecfb9bc23f270b5af8a5525f1fa934ef0e6bc4"
+  url "https://downloads.powerdns.com/releases/dnsdist-1.6.0.tar.bz2"
+  sha256 "a7783a04d8d4ad2b0168ffaaf85ef95d5f557057b0462280684dd799d0cdd292"
+  license "GPL-2.0-only"
+  revision 1
+
+  livecheck do
+    url "https://downloads.powerdns.com/releases/"
+    regex(/href=.*?dnsdist[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "62320372f4328e35695e03165f4565a2a229ecbc6b9d4a9a8943fbe68a010ff9" => :high_sierra
-    sha256 "8665f0e58905c19d1270b14914b9373ba286abbc4891307f91c67e7ab1327e53" => :sierra
-    sha256 "02106300b645be33f32a0bd38dadabce717a5bea74a75dcd353854d3b629580c" => :el_capitan
+    sha256 arm64_big_sur: "81b870ee49e98a796ac239d1e2f3676ce38a7c5f02945102ca2a4a382d6411f3"
+    sha256 big_sur:       "48492b51a983e3b1c097d2debb98e4888fdf458543c3b19d6cdd5b62bdd0a2ff"
+    sha256 catalina:      "17065d7729a4cda1d599acf95b36ca657d27728ecbc202ea9594888487ba1190"
+    sha256 mojave:        "cd8f596aa6e4bb0b11d0a2bea8e1129ddda3ff47d8ee8e4a0dc699e318dd3d9b"
   end
 
   depends_on "boost" => :build
   depends_on "pkg-config" => :build
-  depends_on "lua"
+  depends_on "cdb"
+  depends_on "fstrm"
+  depends_on "h2o"
+  depends_on "libsodium"
+  depends_on "luajit-openresty"
+  depends_on "openssl@1.1"
+  depends_on "protobuf"
+  depends_on "re2"
+
+  uses_from_macos "libedit"
 
   def install
     # error: unknown type name 'mach_port_t'
     ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version == :sierra
 
-    if MacOS.version == :high_sierra
-      sdk = MacOS::CLT.installed? ? "" : MacOS.sdk_path
-      ENV["LIBEDIT_CFLAGS"] = "-I#{sdk}/usr/include -I#{sdk}/usr/include/editline"
-      ENV["LIBEDIT_LIBS"] = "-L/usr/lib -ledit -lcurses"
-    end
-
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--prefix=#{prefix}",
                           "--without-net-snmp",
+                          "--enable-dns-over-tls",
+                          "--enable-dns-over-https",
+                          "--enable-dnscrypt",
+                          "--with-re2",
                           "--sysconfdir=#{etc}/dnsdist"
     system "make", "install"
   end

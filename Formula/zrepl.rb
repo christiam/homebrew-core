@@ -1,18 +1,20 @@
 class Zrepl < Formula
   desc "One-stop ZFS backup & replication solution"
   homepage "https://zrepl.github.io"
-  url "https://github.com/zrepl/zrepl/archive/v0.2.1.tar.gz"
-  sha256 "df474e70f5a51d84816ee8a06038ded167a7548e547e2d2822c313f088eeeafd"
-  head "https://github.com/zrepl/zrepl.git"
+  url "https://github.com/zrepl/zrepl/archive/v0.4.0.tar.gz"
+  sha256 "e7035a8a40913614f4ab24d7caad2c26419fd2b0aaa3565c16439e59214ae590"
+  license "MIT"
+  head "https://github.com/zrepl/zrepl.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "089ca444325890a214face9ea6de0cfc7de1a931ce126e4253f0c390c814fd67" => :catalina
-    sha256 "0907d294ed2efe16891751914c03f869940b0c640e82ae11b882d50a60352dab" => :mojave
-    sha256 "d480d224d1cfd259622de17f60d7f619f439e9cf37337a0a136fba827daa36d2" => :high_sierra
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "5f7aabb2340c6245bd76de2658f2d85eefa4892787a51de411d1c5fa0e273a70"
+    sha256 cellar: :any_skip_relocation, big_sur:       "21706026893bdb3aef1e8b66237d500fefc92519538491d212cea68616b01e1d"
+    sha256 cellar: :any_skip_relocation, catalina:      "2725ffa8a53c33564c61e6906bfe93a0c5e510b919757822b66ccec025b251d5"
+    sha256 cellar: :any_skip_relocation, mojave:        "0341ef3fdd925a2507f7d265dee147dc3a4a7249e5da86312abec05281b500fb"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "fa323fd542fdda26c040680679bcaf452306e653a91aeac5a20ca0569ff6d3fc"
   end
 
-  depends_on "dep" => :build
   depends_on "go" => :build
 
   resource "sample_config" do
@@ -21,24 +23,8 @@ class Zrepl < Formula
   end
 
   def install
-    contents = Dir["{*,.git,.gitignore}"]
-    gopath = buildpath/"gopath"
-    (gopath/"src/github.com/zrepl/zrepl").install contents
-
-    ENV["GOPATH"] = gopath
-    ENV["GOOS"]   = "darwin"
-    ENV["GOARCH"] = "amd64"
-
-    ENV.prepend_create_path "PATH", gopath/"bin"
-    cd gopath/"src/github.com/zrepl/zrepl" do
-      system "go", "build", "-o", "'$GOPATH/bin/stringer'", "golang.org/x/tools/cmd/stringer"
-      system "go", "build", "-o", "'$GOPATH/bin/protoc-gen-go'", "github.com/golang/protobuf/protoc-gen-go"
-      system "go", "build", "-o", "'$GOPATH/bin/enumer'", "github.com/alvaroloes/enumer"
-      system "go", "build", "-o", "'$GOPATH/bin/goimports'", "golang.org/x/tools/cmd/goimports"
-      system "go", "build", "-o", "'$GOPATH/bin/golangci-lint'", "github.com/golangci/golangci-lint/cmd/golangci-lint"
-      system "make", "ZREPL_VERSION=#{version}"
-      bin.install "artifacts/zrepl-darwin-amd64" => "zrepl"
-    end
+    system "go", "build", *std_go_args,
+      "-ldflags", "-X github.com/zrepl/zrepl/version.zreplVersion=#{version}"
   end
 
   def post_install
@@ -47,41 +33,14 @@ class Zrepl < Formula
     (etc/"zrepl").mkpath
   end
 
-  plist_options :startup => true, :manual => "sudo zrepl daemon"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>EnvironmentVariables</key>
-        <dict>
-          <key>PATH</key>
-          <string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:#{HOMEBREW_PREFIX}/bin</string>
-        </dict>
-        <key>KeepAlive</key>
-        <true/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/zrepl</string>
-          <string>daemon</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/zrepl/zrepl.err.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/zrepl/zrepl.out.log</string>
-        <key>ThrottleInterval</key>
-        <integer>30</integer>
-        <key>WorkingDirectory</key>
-        <string>#{var}/run/zrepl</string>
-      </dict>
-    </plist>
-  EOS
+  plist_options startup: true
+  service do
+    run [opt_bin/"zrepl", "daemon"]
+    keep_alive true
+    working_dir var/"run/zrepl"
+    log_path var/"log/zrepl/zrepl.out.log"
+    error_log_path var/"log/zrepl/zrepl.err.log"
+    environment_variables PATH: std_service_path_env
   end
 
   test do

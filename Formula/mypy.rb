@@ -1,78 +1,39 @@
 class Mypy < Formula
+  include Language::Python::Virtualenv
+
   desc "Experimental optional static type checker for Python"
   homepage "http://www.mypy-lang.org/"
-  url "https://github.com/python/mypy.git",
-      :tag      => "v0.740",
-      :revision => "0662772b5a6b9029da0cf4aec857b9b1e34057a9"
-  revision 1
-  head "https://github.com/python/mypy.git"
+  url "https://files.pythonhosted.org/packages/33/46/b5d01f8844c84772e950bfc6adcaaa94cd22fedeb7c01776fd6effb3c2f6/mypy-0.910.tar.gz"
+  sha256 "704098302473cb31a218f1775a873b376b30b4c18229421e9e9dc8916fd16150"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f6254003146ab4e1ade60be5ab23bcca0f3e3086d2949ca1fd93c63d5ef627f0" => :catalina
-    sha256 "539a9f99c6f0118e0c6e3ee0c80e201272244ea29939fdadc3ebde276c39ef4f" => :mojave
-    sha256 "954d03c00690939582b135c17fc6aa90f24a698bdd27c4e5c6ecc7946a3c6b3d" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "b26ec8a65759403978f0380c0dcc6dcf2f08d8eaaf11eb00e6bff38fd35ca927"
+    sha256 cellar: :any_skip_relocation, big_sur:       "05bb918c8d742e91231f01451d11e1d3c2a3bae29f30cbc483a40d32d1b4c908"
+    sha256 cellar: :any_skip_relocation, catalina:      "05460595d3671e0afc0a6af784a44a0c67891d77974e1f0fd85c890d4bcb0592"
+    sha256 cellar: :any_skip_relocation, mojave:        "f199a383e494c3585d2cdca8e745053898c33dfa2993fd3320fdeaf2a7142816"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "0d0f6cc419325dd59b6a6a7fe4f79bc47e645dd3d96d131d46a4f9491d9d07af"
   end
 
-  depends_on "sphinx-doc" => :build
-  depends_on "python"
+  depends_on "python@3.9"
 
-  resource "psutil" do
-    url "https://files.pythonhosted.org/packages/1c/ca/5b8c1fe032a458c2c4bcbe509d1401dca9dda35c7fc46b36bb81c2834740/psutil-5.6.3.tar.gz"
-    sha256 "863a85c1c0a5103a12c05a35e59d336e1d665747e531256e061213e2e90f63f3"
+  resource "mypy-extensions" do
+    url "https://files.pythonhosted.org/packages/63/60/0582ce2eaced55f65a4406fc97beba256de4b7a95a0034c6576458c6519f/mypy_extensions-0.4.3.tar.gz"
+    sha256 "2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8"
   end
 
-  resource "sphinx_rtd_theme" do
-    url "https://files.pythonhosted.org/packages/ed/73/7e550d6e4cf9f78a0e0b60b9d93dba295389c3d271c034bf2ea3463a79f9/sphinx_rtd_theme-0.4.3.tar.gz"
-    sha256 "728607e34d60456d736cc7991fd236afb828b21b82f956c5ea75f94c8414040a"
+  resource "toml" do
+    url "https://files.pythonhosted.org/packages/be/ba/1f744cdc819428fc6b5084ec34d9b30660f6f9daaf70eead706e3203ec3c/toml-0.10.2.tar.gz"
+    sha256 "b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"
   end
 
-  resource "typed-ast" do
-    url "https://files.pythonhosted.org/packages/34/de/d0cfe2ea7ddfd8b2b8374ed2e04eeb08b6ee6e1e84081d151341bba596e5/typed_ast-1.4.0.tar.gz"
-    sha256 "66480f95b8167c9c5c5c87f32cf437d585937970f3fc24386f313a4c97b44e34"
-  end
-
-  resource "mypy_extensions" do
-    url "https://files.pythonhosted.org/packages/c2/92/3cc05d1206237d54db7b2565a58080a909445330b4f90a6436302a49f0f8/mypy_extensions-0.4.1.tar.gz"
-    sha256 "37e0e956f41369209a3d5f34580150bcacfabaa57b33a15c0b25f4b5725e0812"
-  end
-
-  resource "typing_extensions" do
-    url "https://files.pythonhosted.org/packages/59/b6/21774b993eec6e797fbc49e53830df823b69a3cb62f94d36dfb497a0b65a/typing_extensions-3.7.4.tar.gz"
-    sha256 "2ed632b30bb54fc3941c382decfd0ee4148f5c591651c9272473fea2c6397d95"
+  resource "typing-extensions" do
+    url "https://files.pythonhosted.org/packages/aa/55/62e2d4934c282a60b4243a950c9dbfa01ae7cac0e8d6c0b5315b87432c81/typing_extensions-3.10.0.0.tar.gz"
+    sha256 "50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342"
   end
 
   def install
-    xy = Language::Python.major_minor_version "python3"
-
-    # https://github.com/python/mypy/issues/2593
-    version_static = buildpath/"mypy/version_static.py"
-    version_static.write "__version__ = '#{version}'\n"
-    inreplace "docs/source/conf.py", "mypy.version", "mypy.version_static"
-
-    (buildpath/"docs/sphinx_rtd_theme").install resource("sphinx_rtd_theme")
-    # Inject sphinx_rtd_theme's path into sys.path
-    inreplace "docs/source/conf.py",
-              "sys.path.insert(0, os.path.abspath('../..'))",
-              "sys.path[:0] = [os.path.abspath('../..'), os.path.abspath('../sphinx_rtd_theme')]"
-    system "make", "-C", "docs", "html"
-    doc.install Dir["docs/build/html/*"]
-
-    rm version_static
-
-    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python#{xy}/site-packages"
-    resources.each do |r|
-      r.stage do
-        system "python3", *Language::Python.setup_install_args(libexec/"vendor")
-      end
-    end
-
-    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python#{xy}/site-packages"
-    ENV["MYPY_USE_MYPYC"] = "1"
-    system "python3", *Language::Python.setup_install_args(libexec)
-
-    bin.install Dir[libexec/"bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    virtualenv_install_with_resources
   end
 
   test do

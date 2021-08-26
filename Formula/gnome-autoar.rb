@@ -1,28 +1,36 @@
 class GnomeAutoar < Formula
   desc "GNOME library for archive handling"
   homepage "https://github.com/GNOME/gnome-autoar"
-  url "https://download.gnome.org/sources/gnome-autoar/0.2/gnome-autoar-0.2.4.tar.xz"
-  sha256 "0a34c377f8841abbf4c29bc848b301fbd8e4e20c03d7318c777c58432033657a"
+  url "https://download.gnome.org/sources/gnome-autoar/0.4/gnome-autoar-0.4.0.tar.xz"
+  sha256 "ea8c6d524babc712ac59e1d0e3ac8bf0137482dadf33c94fe9113794a1bc4474"
+  license "LGPL-2.1-or-later"
 
-  bottle do
-    cellar :any
-    sha256 "e98e396441864f69d9866921363bbff8fe3a0e6e7048e9fcebfa98d0f8e3100c" => :catalina
-    sha256 "8f87552420faa2d64fee8cf655a15c58eb988bba92284b00e4fcb3cf2f10ce82" => :mojave
-    sha256 "bc17062bdb3f3b299c5122ffd887ff872d22f9d3021faed94db07da9687d096c" => :high_sierra
+  # gnome-autoar doesn't seem to follow the typical GNOME version format where
+  # even-numbered minor versions are stable, so we override the default regex
+  # from the `Gnome` strategy.
+  livecheck do
+    url :stable
+    regex(/gnome-autoar[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 cellar: :any, arm64_big_sur: "c878f58ddccf4f6ccb9fb21f85284434072706235dca4dcd281b02fe3206ca4c"
+    sha256 cellar: :any, big_sur:       "28531f6dadc4e792c3689da6c041a65134a5f9a3eeb8cefdddba3e91dbc2fddc"
+    sha256 cellar: :any, catalina:      "0de2d5a412701bd644080e47c4dcae47f262f76a6f5762477f3497f42202d647"
+    sha256 cellar: :any, mojave:        "93261513fc4078cecc0e921d809de1f549e5c39e83cf06fbbeaea194fe83b850"
+  end
+
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "gtk+3"
   depends_on "libarchive"
 
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--disable-glibtest",
-                          "--disable-schemas-compile"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   def post_install

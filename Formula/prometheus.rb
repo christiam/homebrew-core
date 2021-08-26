@@ -1,14 +1,21 @@
 class Prometheus < Formula
   desc "Service monitoring system and time series database"
   homepage "https://prometheus.io/"
-  url "https://github.com/prometheus/prometheus/archive/v2.15.2.tar.gz"
-  sha256 "2ba37bced3e90c5e7dd3248918f13f2f3444de748cfe413b0a09f82532c3c553"
+  url "https://github.com/prometheus/prometheus/archive/v2.29.1.tar.gz"
+  sha256 "727c088dd7275c769403d5c284cd2152dbc98d0e4ebfd55596f5f8e58c76473a"
+  license "Apache-2.0"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "4c1fec08803cee24252ac7ae3459b928e609a42a2151ed17017b2182ef183877" => :catalina
-    sha256 "d4807cdd70fa35152127626e79a1f966ae3e7a50be06fd3c239a8bd039492212" => :mojave
-    sha256 "0a75a53d47767302e3014e98a227cc5b61a9536b31d1a0c50ed506593d014852" => :high_sierra
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "50ff97cc416ee0309dd9668bb25525f2a89c7beac661deaa0a7583f33c780623"
+    sha256 cellar: :any_skip_relocation, big_sur:       "c1423d4804ba416ccd034630205181fb882ec7fbf9818eb0ec5ebff3ab5d682b"
+    sha256 cellar: :any_skip_relocation, catalina:      "0bde01c5b76be229c324b920bc4553bd24c81ae43d124144be4eccc55874bf55"
+    sha256 cellar: :any_skip_relocation, mojave:        "7e34008c2372c3c754d6c51e7550d254c755722839d19f2b998c863c6666e7ed"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "2b280a87f8926cf91e4e74c6f66216b3c9209ea491bebf2451c3cd3ad07f28a7"
   end
 
   depends_on "go" => :build
@@ -23,16 +30,19 @@ class Prometheus < Formula
     system "make", "build"
     bin.install %w[promtool prometheus]
     libexec.install %w[consoles console_libraries]
-  end
 
-  def post_install
-    (etc/"prometheus.args").write <<~EOS
+    (bin/"prometheus_brew_services").write <<~EOS
+      #!/bin/bash
+      exec #{bin}/prometheus $(<#{etc}/prometheus.args)
+    EOS
+
+    (buildpath/"prometheus.args").write <<~EOS
       --config.file #{etc}/prometheus.yml
       --web.listen-address=127.0.0.1:9090
       --storage.tsdb.path #{var}/prometheus
     EOS
 
-    (etc/"prometheus.yml").write <<~EOS
+    (buildpath/"prometheus.yml").write <<~EOS
       global:
         scrape_interval: 15s
 
@@ -41,43 +51,22 @@ class Prometheus < Formula
           static_configs:
           - targets: ["localhost:9090"]
     EOS
+    etc.install "prometheus.args", "prometheus.yml"
   end
 
-  def caveats; <<~EOS
-    When used with `brew services`, prometheus' configuration is stored as command line flags in:
-      #{etc}/prometheus.args
-
-    Configuration for prometheus is located in the #{etc}/prometheus.yml file.
-
-  EOS
+  def caveats
+    <<~EOS
+      When run from `brew services`, `prometheus` is run from
+      `prometheus_brew_services` and uses the flags in:
+         #{etc}/prometheus.args
+    EOS
   end
 
-  plist_options :manual => "prometheus"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-      <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>sh</string>
-          <string>-c</string>
-          <string>#{opt_bin}/prometheus $(&lt; #{etc}/prometheus.args)</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <false/>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/prometheus.err.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/prometheus.log</string>
-      </dict>
-    </plist>
-  EOS
+  service do
+    run [opt_bin/"prometheus_brew_services"]
+    keep_alive false
+    log_path var/"log/prometheus.log"
+    error_log_path var/"log/prometheus.err.log"
   end
 
   test do

@@ -1,14 +1,20 @@
 class Vips < Formula
   desc "Image processing library"
   homepage "https://github.com/libvips/libvips"
-  url "https://github.com/libvips/libvips/releases/download/v8.8.4/vips-8.8.4.tar.gz"
-  sha256 "9f7ae87814d990b67913ae69dc5f26fe62719e29aa7e6cc8908066f31ee15a35"
-  revision 1
+  url "https://github.com/libvips/libvips/releases/download/v8.11.3/vips-8.11.3.tar.gz"
+  sha256 "9b0a1d2f477d6fb4298d383a61232bcb4b2ea91ab76a1113d31883b50f3cdf01"
+  license "LGPL-2.1-or-later"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "bc081a7d00a0447ffc0a6033eabeef9462e9f2206d0138963293d12f78408efd" => :catalina
-    sha256 "11eb8e9e6f5700951c2d4137d22e4a94a711359bb4fc18321860be17cec947fb" => :mojave
-    sha256 "d8e1a410d9f85bbda7c8aa878541f1637d215c07ed177c199857b5fc256e31c4" => :high_sierra
+    sha256 arm64_big_sur: "f03101a2c9ab9af3867b4b7bae0e345475738dc50a66ed5478df3a824a079624"
+    sha256 big_sur:       "fcc96568f87ab0beeb60ccdbcc756c4fe1e1fdefbb1231ed1f32225624e10d33"
+    sha256 catalina:      "8ae51248f902674f2741023827a3787f5b5a746eda81647bc22d83769518393b"
+    sha256 mojave:        "ec5b03110b8fd50249fa20d2a0c6dd4ee64d190570579e4d7b0d07ed48f3ed8f"
   end
 
   depends_on "pkg-config" => :build
@@ -22,9 +28,11 @@ class Vips < Formula
   depends_on "libexif"
   depends_on "libgsf"
   depends_on "libheif"
+  depends_on "libimagequant"
   depends_on "libmatio"
   depends_on "libpng"
   depends_on "librsvg"
+  depends_on "libspng"
   depends_on "libtiff"
   depends_on "little-cms2"
   depends_on "mozjpeg"
@@ -34,6 +42,12 @@ class Vips < Formula
   depends_on "pango"
   depends_on "poppler"
   depends_on "webp"
+
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "gobject-introspection"
+  end
 
   def install
     # mozjpeg needs to appear before libjpeg, otherwise it's not used
@@ -56,6 +70,10 @@ class Vips < Formula
 
     # --trellis-quant requires mozjpeg, vips warns if it's not present
     cmd = "#{bin}/vips jpegsave #{test_fixtures("test.png")} #{testpath}/test.jpg --trellis-quant 2>&1"
+    assert_equal "", shell_output(cmd)
+
+    # [palette] requires libimagequant, vips warns if it's not present
+    cmd = "#{bin}/vips copy #{test_fixtures("test.png")} #{testpath}/test.png[palette] 2>&1"
     assert_equal "", shell_output(cmd)
   end
 end
